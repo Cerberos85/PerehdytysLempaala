@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="fi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="css/style.css">
+    <title>Esimiehen raportit</title>
+    <style>
+        /* Lisätään yksinkertaiset taulukkotyylit luettavuuden parantamiseksi */
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+        th, td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: left;
+        }
+        th {
+            background-color: #f2f2f2;
+        }
+    </style>
+</head>
+<body>
+
+    <header>
+        <h1>Esimiehen näkymä</h1>
+        <p>Kirjaudu ulos <button id="logoutButton">tästä</button></p>
+    </header>
+
+    <main>
+        <h2>Perehdytysten tila</h2>
+        
+        <div id="report-container">
+            <p>Ladataan raportteja...</p>
+        </div>
+
+    </main>
+
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore-compat.js"></script>
+    
+    <script src="js/firebase-config.js"></script>
+    
+    <script>
+        firebase.initializeApp(firebaseConfig);
+    </script>
+    
+    <script src="js/manager-logic.js"></script>
+
+</body>
+</html>

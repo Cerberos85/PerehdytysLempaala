@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="fi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Oma perehdytys</title>
+    <link rel="stylesheet" href="css/style.css">
+    </head>
+<body>
+
+    <header>
+        <h1>Perehdytyssovellus</h1>
+        <p>Tervetuloa! Kirjaudu ulos <button id="logoutButton">tästä</button></p>
+    </header>
+
+    <main>
+        <h2>Oma edistymisesi</h2>
+
+        <section class="module">
+            <h3>Suntion tehtävät</h3>
+            <div>
+                <input type="checkbox" id="suntio-task1">
+                <label for="suntio-task1">Tehtävä A (esim. hälytysjärjestelmät)</label>
+            </div>
+            <div>
+    <input type="checkbox" id="suntio-task2">
+    <label for="suntio-task2">Tehtävä B (esim. siivousvälineet)</label>
+</div>
+
+<div style="margin-top: 15px; border-top: 1px solid #ccc; padding-top: 10px;">
+    <h4>Häät</h4>
+    <div>
+        <input type="checkbox" id="haat-task1-kirkko">
+        <label for="haat-task1-kirkko">Kirkon valmistelu (valaistus, alttari)</label>
+        <span id="haat-task1-date" style="font-size: 0.9em; color: #555; margin-left: 10px;"></span>
+    </div>
+    <div>
+        <input type="checkbox" id="haat-task2-opastus">
+        <label for="haat-task2-opastus">Vieraiden opastus ja äänentoisto</label>
+        <span id="haat-task2-date" style="font-size: 0.9em; color: #555; margin-left: 10px;"></span>
+    </div>
+</div>
+</section>
+
+        <hr>
+        <button id="saveButton">Tallenna edistyminen</button>
+        <p id="saveStatus" style="color:green;"></p>
+
+    </main>
+
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore-compat.js"></script>
+    
+    <script src="js/firebase-config.js"></script>
+    
+    <script>
+        firebase.initializeApp(firebaseConfig);
+    </script>
+    
+    <script src="js/app-logic.js"></script>
+
+</body>
+</html>

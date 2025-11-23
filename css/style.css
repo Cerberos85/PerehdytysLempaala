@@ -1,0 +1,130 @@
+/* css/style.css */
+
+/* --- Yleiset perusasetukset --- */
+body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    line-height: 1.6;
+    margin: 0;
+    padding: 0;
+    background-color: #f4f4f4;
+}
+
+header, main {
+    padding: 15px;
+}
+
+/* Keskittää sisällön nätisti työpöydällä, 
+  mutta antaa sen viedä koko leveyden mobiilissa.
+*/
+.login-container, main {
+    max-width: 800px; /* Maksimileveys työpöydällä */
+    margin: 20px auto; /* Keskittää automaattisesti */
+    background-color: #ffffff;
+    border-radius: 8px;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+}
+
+input[type="email"],
+input[type="password"],
+input[type="text"] {
+    width: 100%; /* Vie aina 100% leveydestä */
+    padding: 10px;
+    margin-bottom: 10px;
+    box-sizing: border-box; /* Estää paddingia rikkomasta leveyttä */
+    border: 1px solid #ccc;
+    border-radius: 4px;
+}
+
+button {
+    background-color: #007bff;
+    color: white;
+    padding: 12px 20px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 16px;
+    width: 100%; /* Napit vievät koko leveyden mobiilissa */
+}
+
+button:hover {
+    background-color: #0056b3;
+}
+
+#logoutButton {
+    width: auto; /* Älä pakota uloskirjautumisnappia koko leveydelle */
+    background-color: #6c757d;
+}
+
+/* --- Perehdytysmoduulit --- */
+.module {
+    margin-bottom: 20px;
+    border: 1px solid #eee;
+    padding: 15px;
+    border-radius: 4px;
+}
+
+/* Asettaa checkboxin ja tekstin nätisti vierekkäin */
+.module div {
+    display: flex;
+    align-items: center;
+    margin-bottom: 10px;
+}
+.module input[type="checkbox"] {
+    margin-right: 10px;
+    /* Suurennetaan osumakohdetta mobiilissa */
+    width: 20px;
+    height: 20px;
+}
+.module label {
+    flex-grow: 1; /* Label vie lopun tilan */
+}
+
+/* --- Esimiehen taulukko --- */
+table {
+    width: 100%;
+    border-collapse: collapse;
+}
+th, td {
+    border: 1px solid #ddd;
+    padding: 8px;
+    text-align: left;
+}
+th {
+    background-color: #f2f2f2;
+}
+
+
+/* =====================================================
+  MEDIA QUERY (TÄMÄ ON TÄRKEIN OSA)
+  Nämä säännöt otetaan käyttöön VAIN, kun näyttö 
+  on 600px leveä TAI KAPEAMPI (eli useimmat puhelimet).
+=====================================================
+*/
+@media (max-width: 600px) {
+
+    body {
+        font-size: 16px; /* Helpottaa lukemista mobiilissa */
+    }
+
+    /* Pakotetaan sisältö reunoihin asti mobiilissa */
+    .login-container, main {
+        width: 100%;
+        margin: 0;
+        border-radius: 0;
+        box-shadow: none;
+        border: none;
+    }
+
+    button {
+        /* Varmistetaan, että napit ovat helposti painettavissa */
+        padding: 15px;
+    }
+
+    /* Mobiilissa taulukot ovat ongelma. Tämä yksinkertainen temppu
+       pakottaa taulukon rullaamaan sivuttain, jos se ei mahdu.
+       Se ei ole täydellinen, mutta estää sivua rikkoutumasta.
+    */
+    #report-container {
+        overflow-x: auto;
+    }
+}
