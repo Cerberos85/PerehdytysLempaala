@@ -73,7 +73,7 @@ async function loadAllEmployeeProgress() {
 
         let query = db.collection('userProgress');
 
-        // Suodatetaan osaston mukaan (ellei ole Super Admin)
+        // Suodatetaan osaston mukaan
         if (isSuperAdmin) {
             console.log("Super Admin - ladataan kaikki.");
         } else if (managedDept) {
@@ -81,19 +81,18 @@ async function loadAllEmployeeProgress() {
             query = query.where('department', '==', managedDept);
         }
 
-        // Suodatetaan päättyneet pois
         query = query.where('employmentEnded', '!=', true);
 
         const snapshot = await query.get();
         
-        // Rakennetaan taulukko
+        // --- PÄIVITETTY TAULUKON OTSIKOT ---
         let html = `
-            <table>
+            <div style="overflow-x: auto;"> <table>
                 <tr>
                     <th>Työntekijä</th>
                     <th>Suntio %</th>
                     <th>Toimisto %</th>
-                    <th>Häät %</th>
+                    <th>Hautaustoimi %</th> <th>Suntiotyö %</th>    <th>Lapsiperhe %</th>   <th>Häät %</th>
                     <th>Päivitetty</th>
                     <th>Toiminnot</th>
                 </tr>
@@ -102,11 +101,16 @@ async function loadAllEmployeeProgress() {
         snapshot.forEach(doc => {
             const data = doc.data();
             
+            // --- LASKETAAN KAIKKI ROOLIT ---
             const suntioProgress = calculateProgress(data.suntio);
             const toimistoProgress = calculateProgress(data.toimisto);
             const haatProgress = calculateProgress(data.haat);
             
-            // Linkki yksilöraporttiin
+            // Uudet osiot
+            const hautausProgress = calculateProgress(data.hautaustoimi);
+            const suntiotyoProgress = calculateProgress(data.suntiotyo);
+            const lapsiProgress = calculateProgress(data.lapsiperhe);
+            
             const userLink = `<a href="employee-report.html?uid=${doc.id}" target="_blank">${data.userEmail || 'Tuntematon'}</a>`;
             const lastUpdated = data.lastUpdated ? data.lastUpdated.toDate().toLocaleString('fi-FI') : '-';
 
@@ -115,7 +119,7 @@ async function loadAllEmployeeProgress() {
                     <td>${userLink}</td>
                     <td>${suntioProgress}%</td>
                     <td>${toimistoProgress}%</td>
-                    <td>${haatProgress}%</td>
+                    <td>${hautausProgress}%</td>    <td>${suntiotyoProgress}%</td>  <td>${lapsiProgress}%</td>      <td>${haatProgress}%</td>
                     <td>${lastUpdated}</td>
                     <td>
                         <button class="end-contract-btn" data-userid="${doc.id}">Päätä työsuhde</button>
@@ -124,28 +128,13 @@ async function loadAllEmployeeProgress() {
             `;
         });
         
-        html += '</table>';
+        html += '</table></div>';
         reportContainer.innerHTML = html;
 
     } catch (error) {
         console.error("Virhe raporttien lataamisessa:", error);
-        reportContainer.innerHTML = '<p style="color:red;">Latausvirhe (tarkista konsoli F12). Saattaa vaatia indeksin luonnin.</p>';
+        reportContainer.innerHTML = '<p style="color:red;">Latausvirhe (tarkista konsoli F12).</p>';
     }
-}
-
-// Apufunktio prosentin laskentaan
-function calculateProgress(section) {
-    if (!section) return 0;
-    const tasks = Object.values(section);
-    if (tasks.length === 0) return 0;
-
-    let completed = 0;
-    tasks.forEach(task => {
-        if (task === true) completed++; // Vanha tyyli
-        else if (task && task.completed === true) completed++; // Uusi tyyli
-    });
-    
-    return Math.round((completed / tasks.length) * 100);
 }
 
 // --- 3. TIEDOSTOJEN LATAUS (STORAGE) ---

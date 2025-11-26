@@ -1,34 +1,29 @@
 // js/auth.js
 
-// Alustetaan Firebase Auth ja Firestore
+// Alustetaan Firebase
 const auth = firebase.auth();
 const db = firebase.firestore();
 
-// Haetaan HTML-elementit, joita tarvitsemme
 const loginButton = document.getElementById('loginButton');
 const emailInput = document.getElementById('email');
 const passwordInput = document.getElementById('password');
 const errorMessage = document.getElementById('error-message');
 
-// Lisätään "kuuntelija" napille. Tämä koodi suoritetaan, kun nappia klikataan.
 loginButton.addEventListener('click', () => {
     const email = emailInput.value;
     const password = passwordInput.value;
 
     errorMessage.textContent = "";
+    errorMessage.style.color = "red";
 
+    // 1. Aloitetaan kirjautuminen
     auth.signInWithEmailAndPassword(email, password)
         .then((userCredential) => {
-            // KIRJAUTUMINEN ONNISTUI
-            console.log("Kirjautuminen onnistui:", userCredential.user.email);
-
-            // --- TÄSSÄ OLI VIKA ---
+            console.log("1. Kirjautuminen onnistui käyttäjällä:", userCredential.user.email);
             
-            // Kutsu tätä funktiota. Se hoitaa ohjauksen (joko manager.html tai app.html).
+            // 2. Kutsutaan ohjausfunktiota
+            // TÄRKEÄÄ: Tämän jälkeen EI SAA olla window.location.href -kutsua!
             checkUserRoleAndRedirect(userCredential.user);
-
-            // POISTA TÄMÄ RIVI!
-            // window.location.href = 'app.html'; <--- TÄMÄ PAKOTTI KAIKKI TYÖNTEKIJÄSIVULLE
         })
         .catch((error) => {
             console.error("Kirjautumisvirhe:", error);
@@ -36,18 +31,29 @@ loginButton.addEventListener('click', () => {
         });
 });
 
+// Funktio, joka tekee päätöksen minne mennään
 async function checkUserRoleAndRedirect(user) {
-    // true-parametri pakottaa hakemaan tuoreimmat tiedot palvelimelta
-    const idTokenResult = await user.getIdTokenResult(true);
+    console.log("2. Aloitetaan roolin tarkistus...");
     
-    console.log("Tarkistetaan roolit:", idTokenResult.claims); // Debuggausta varten
+    try {
+        // Pakotetaan haku palvelimelta (true)
+        const idTokenResult = await user.getIdTokenResult(true);
+        const claims = idTokenResult.claims;
 
-    // TARKISTUS: Onko käyttäjä manager?
-    if (idTokenResult.claims.manager === true) {
-        console.log("Käyttäjä on esimies -> manager.html");
-        window.location.href = 'manager.html';
-    } else {
-        console.log("Käyttäjä on työntekijä -> app.html");
-        window.location.href = 'app.html';
+        console.log("3. Löydetyt roolit (Claims):", claims);
+
+        // TARKISTUS: Onko manager?
+        // Huom: Tarkistetaan onko se olemassa ja tosi
+        if (claims.manager === true) {
+            console.log(">>> PÄÄTÖS: Käyttäjä on ESIMIES -> Ohjataan manager.html");
+            window.location.href = 'manager.html';
+        } else {
+            console.log(">>> PÄÄTÖS: Käyttäjä on TYÖNTEKIJÄ -> Ohjataan app.html");
+            window.location.href = 'app.html';
+        }
+
+    } catch (error) {
+        console.error("Virhe roolien tarkistuksessa:", error);
+        errorMessage.textContent = "Virhe roolien haussa. Yritä uudelleen.";
     }
 }
