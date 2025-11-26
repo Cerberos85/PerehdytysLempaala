@@ -15,32 +15,24 @@ loginButton.addEventListener('click', () => {
     const email = emailInput.value;
     const password = passwordInput.value;
 
-    // Tyhjennetään vanha virheviesti
     errorMessage.textContent = "";
 
-    // Yritetään kirjautua sisään Firebasen avulla
     auth.signInWithEmailAndPassword(email, password)
         .then((userCredential) => {
             // KIRJAUTUMINEN ONNISTUI
-
-            // Tulostetaan konsoliin (hyvä virheenjäljitykseen F12-työkaluissa)
             console.log("Kirjautuminen onnistui:", userCredential.user.email);
 
-            // Tässä kohtaa tarkistetaan, onko käyttäjä esimies vai työntekijä
-            // ja ohjataan oikealle sivulle.
-            // Teemme tämän toiminnon myöhemmin (vaiheissa 5 ja 6).
-            // Nyt ohjataan kaikki vain app.html-sivulle.
-
+            // --- TÄSSÄ OLI VIKA ---
+            
+            // Kutsu tätä funktiota. Se hoitaa ohjauksen (joko manager.html tai app.html).
             checkUserRoleAndRedirect(userCredential.user);
-            window.location.href = 'app.html'; // Voit poistaa tämän kommentin testataksesi ohjausta
 
+            // POISTA TÄMÄ RIVI!
+            // window.location.href = 'app.html'; <--- TÄMÄ PAKOTTI KAIKKI TYÖNTEKIJÄSIVULLE
         })
         .catch((error) => {
-            // KIRJAUTUMINEN EPÄONNISTUI
-            console.error("Kirjautumisvirhe:", error.message);
-
-            // Annetaan käyttäjälle ystävällinen virheilmoitus
-            errorMessage.textContent = "Virheellinen sähköposti tai salasana.";
+            console.error("Kirjautumisvirhe:", error);
+            errorMessage.textContent = "Virhe: " + error.message;
         });
 });
 
