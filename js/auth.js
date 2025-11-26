@@ -44,22 +44,18 @@ loginButton.addEventListener('click', () => {
         });
 });
 
-// Tämä funktio on nyt käytössä.
-// Se tarkistaa roolin ja ohjaa oikealle sivulle (app.html tai manager.html)
 async function checkUserRoleAndRedirect(user) {
+    // true-parametri pakottaa hakemaan tuoreimmat tiedot palvelimelta
+    const idTokenResult = await user.getIdTokenResult(true);
     
-    // Pyydetään Firebasea päivittämään roolitiedot (varmuuden vuoksi)
-    const idTokenResult = await user.getIdTokenResult(true); // true = pakota päivitys
-    
-    console.log("Käyttäjän roolit (claims):", idTokenResult.claims);
+    console.log("Tarkistetaan roolit:", idTokenResult.claims); // Debuggausta varten
 
-    if (idTokenResult.claims.manager) {
-        // Jos käyttäjällä on 'manager' rooli
-        console.log("Ohjataan esimiesnäkymään.");
+    // TARKISTUS: Onko käyttäjä manager?
+    if (idTokenResult.claims.manager === true) {
+        console.log("Käyttäjä on esimies -> manager.html");
         window.location.href = 'manager.html';
     } else {
-        // Oletuksena työntekijä
-        console.log("Ohjataan työntekijänäkymään.");
+        console.log("Käyttäjä on työntekijä -> app.html");
         window.location.href = 'app.html';
     }
 }
