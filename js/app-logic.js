@@ -24,7 +24,11 @@ auth.onAuthStateChanged(async (user) => {
         // Näytä oikeat osiot
         showSectionsBasedOnRole(userRole);
 
+        // Lataa rastit
         loadUserProgress(user.uid);
+
+        // TÄMÄ RIVI AIHEUTTI VIRHEEN, KOSKA FUNKTIO PUUTTUI. 
+        // NYT SE ON LISÄTTY TIEDOSTON LOPPUUN.
         loadSharedDocuments(); 
 
     } else {
@@ -33,7 +37,7 @@ auth.onAuthStateChanged(async (user) => {
     }
 });
 
-// --- 2. LATAUSLOGIIKKA ---
+// --- 2. LATAUSLOGIIKKA (RASTIT) ---
 
 async function loadUserProgress(uid) {
     const docRef = db.collection('userProgress').doc(uid);
@@ -60,7 +64,7 @@ async function loadUserProgress(uid) {
             // 4. HAUTAUSTOIMI
             updateTaskUI('hautaus-task1', data.hautaustoimi?.task1, 'hautaus-task1-date');
             
-            // 5. SUNTIOTYÖ (Tämä ladataan nyt oikein, jos ID täsmää HTML:ään)
+            // 5. SUNTIOTYÖ
             updateTaskUI('suntiotyo-task1', data.suntiotyo?.task1, 'suntiotyo-task1-date');
             
             // 6. LAPSI- JA PERHETYÖ
@@ -119,7 +123,6 @@ async function saveProgress() {
         console.log("Roolin haku epäonnistui", e);
     }
 
-    // Apufunktio checkboxin ja päivämäärän tallennusobjektin luontiin
     const getTaskObj = (id) => {
         const el = document.getElementById(id);
         const isChecked = el ? el.checked : false;
@@ -129,12 +132,10 @@ async function saveProgress() {
         };
     };
 
-    // Luodaan tallennettava data
     const progressData = {
         userEmail: currentUser.email, 
         department: myRole, 
         
-        // Vanhat (boolean)
         suntio: {
             task1: document.getElementById('suntio-task1') ? document.getElementById('suntio-task1').checked : false,
             task2: document.getElementById('suntio-task2') ? document.getElementById('suntio-task2').checked : false,
@@ -143,8 +144,6 @@ async function saveProgress() {
             task1: document.getElementById('toimisto-task1') ? document.getElementById('toimisto-task1').checked : false,
             task2: document.getElementById('toimisto-task2') ? document.getElementById('toimisto-task2').checked : false,
         },
-        
-        // Uudet (objekti + pvm)
         haat: {
             task1: getTaskObj('haat-task1-kirkko'),
             task2: getTaskObj('haat-task2-opastus')
@@ -158,7 +157,6 @@ async function saveProgress() {
         lapsiperhe: {
             task1: getTaskObj('lapsi-task1')
         },
-
         lastUpdated: now 
     };
 
@@ -166,8 +164,6 @@ async function saveProgress() {
         await db.collection('userProgress').doc(currentUser.uid).set(progressData, { merge: true });
         
         saveStatus.textContent = "Edistyminen tallennettu!";
-        console.log(`Tallennettu osastolla: ${myRole}`);
-        
         loadUserProgress(currentUser.uid); 
         setTimeout(() => { saveStatus.textContent = ""; }, 3000);
 
@@ -179,12 +175,9 @@ async function saveProgress() {
 
 saveButton.addEventListener('click', saveProgress);
 
-// --- 4. NÄKYMÄN HALLINTA (TÄMÄ OLI VIKANA) ---
+// --- 4. NÄKYMÄN HALLINTA ---
 
 function showSectionsBasedOnRole(role) {
-    console.log("Päivitetään näkymä roolille:", role);
-
-    // 1. Piilotetaan ensin kaikki osiot
     const allSections = [
         'section-suntio', 
         'section-toimisto', 
@@ -198,13 +191,11 @@ function showSectionsBasedOnRole(role) {
         if (el) el.style.display = 'none';
     });
 
-    // 2. Näytetään vain roolia vastaava
     if (role === 'Hautaustoimi') {
         const el = document.getElementById('section-hautaustoimi');
         if (el) el.style.display = 'block';
     } 
     else if (role === 'Suntiotyö') { 
-        // TÄMÄ PUUTTUI AIEMMIN!
         const el = document.getElementById('section-suntiotyo');
         if (el) el.style.display = 'block';
     } 
@@ -222,7 +213,52 @@ function showSectionsBasedOnRole(role) {
     }
 }
 
-// --- 5. ULOSKIRJAUTUMINEN ---
+// --- 5. PUUTTUVAN FUNKTION LISÄYS: DOKUMENTTIEN LATAUS ---
+
+async function loadSharedDocuments() {
+    const listElement = document.getElementById('document-list');
+    if (!listElement) return; // Varmistus, jos elementtiä ei ole
+
+    try {
+        // Haetaan dokumentit, uusimmasta vanhimpaan
+        const snapshot = await db.collection('sharedDocuments')
+                                 .orderBy('uploadedAt', 'desc')
+                                 .get();
+
+        if (snapshot.empty) {
+            listElement.innerHTML = '<li>Ei jaettuja dokumentteja.</li>';
+            return;
+        }
+
+        listElement.innerHTML = ''; // Tyhjennetään "Ladataan..."
+        
+        snapshot.forEach(doc => {
+            const data = doc.data();
+            
+            const li = document.createElement('li');
+            const a = document.createElement('a');
+            
+            a.href = data.url;        // Latauslinkki
+            a.textContent = data.fileName; // Tiedoston nimi
+            a.target = '_blank';      // Avaa uuteen välilehteen
+            
+            li.appendChild(a);
+            listElement.appendChild(li);
+        });
+
+    } catch (error) {
+        console.error("Virhe jaettujen dokumenttien latauksessa:", error);
+        
+        // Jos tulee indeksi-virhe (koska orderBy), näytetään silti jotain
+        if (error.message.includes('index')) {
+            console.log("Huom: Saatat tarvita Firestore-indeksin 'sharedDocuments'-kokoelmalle (uploadedAt).");
+        }
+        
+        listElement.innerHTML = '<li>Dokumenttien lataus epäonnistui.</li>';
+    }
+}
+
+// --- 6. ULOSKIRJAUTUMINEN ---
 
 logoutButton.addEventListener('click', () => {
     auth.signOut().then(() => {
