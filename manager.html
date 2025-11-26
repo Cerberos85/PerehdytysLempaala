@@ -35,7 +35,15 @@
         <div id="report-container">
             <p>Ladataan raportteja...</p>
         </div>
-
+<section class="module" style="margin-top: 30px; border-top: 2px solid #eee; padding-top: 20px;">
+    <h3>Lataa jaettuja dokumentteja</h3>
+    <p>Valitse PDF-tiedosto (esim. yleisperehdytys.pdf). Se ilmestyy työntekijöiden etusivulle.</p>
+    
+    <input type="file" id="fileUploadInput" accept=".pdf,.doc,.docx">
+    <button id="fileUploadButton" style="width: auto; margin-top: 10px;">Lataa tiedosto</button>
+    
+    <p id="uploadStatus" style="font-weight: bold;"></p>
+</section>
     </main>
 
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>

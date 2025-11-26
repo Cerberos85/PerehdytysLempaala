@@ -2,116 +2,206 @@
 
 const auth = firebase.auth();
 const db = firebase.firestore();
+const storage = firebase.storage(); // Varmista, että tämä on mukana!
 
-// Haetaan HTML-elementit
 const reportContainer = document.getElementById('report-container');
 const logoutButton = document.getElementById('logoutButton');
 
-// --- 1. Tarkista onko käyttäjä kirjautunut JA onko hän esimies ---
+// Latauskomponentit
+const fileUploadInput = document.getElementById('fileUploadInput');
+const fileUploadButton = document.getElementById('fileUploadButton');
+const uploadStatus = document.getElementById('uploadStatus');
+
+// --- 1. AUTH JA ALUSTUS ---
 
 auth.onAuthStateChanged(async (user) => {
     if (user) {
-        // Käyttäjä on kirjautunut. Tarkistetaan rooli.
-        const idTokenResult = await user.getIdTokenResult(true); // true = pakota päivitys
+        // Tarkistetaan rooli
+        const idTokenResult = await user.getIdTokenResult(true);
 
         if (idTokenResult.claims.manager) {
-            // KÄYTTÄJÄ ON ESIMIES. Ladataan raportit.
-            console.log("Pääsy sallittu esimiehelle:", user.email);
+            console.log("Esimies tunnistettu:", user.email);
+            
+            // 1. Ladataan raportit
             loadAllEmployeeProgress();
+
+            // 2. Aktivoidaan tiedoston latausnappi
+            if (fileUploadButton) {
+                fileUploadButton.addEventListener('click', () => {
+                    const file = fileUploadInput.files[0];
+                    if (!file) {
+                        alert("Valitse ensin tiedosto!");
+                        return;
+                    }
+                    uploadSharedDocument(file);
+                });
+            }
+
+            // 3. Aktivoidaan raportin napit (Työsuhteen päättäminen)
+            reportContainer.addEventListener('click', (event) => {
+                if (event.target.classList.contains('end-contract-btn')) {
+                    const userId = event.target.dataset.userid;
+                    const userName = event.target.closest('tr').cells[0].textContent.trim();
+        
+                    if (confirm(`Haluatko varmasti merkitä käyttäjän ${userName} työsuhteen päättyneeksi?`)) {
+                        markEmploymentEnded(userId);
+                    }
+                }
+            });
+
         } else {
-            // KÄYTTÄJÄ ON TAVALLINEN TYÖNTEKIJÄ.
-            // Potkitaan pois tältä sivulta.
-            console.warn("PÄÄSY KIELLETTY: Käyttäjä ei ole esimies.");
-            alert("Sinulla ei ole oikeuksia tähän näkymään.");
-            window.location.href = 'app.html'; // Ohjataan työntekijän sivulle
+            alert("Ei oikeuksia tälle sivulle.");
+            window.location.href = 'app.html';
         }
 
     } else {
-        // Ei kirjautunut, ohjataan takaisin login-sivulle
-        console.log("Ei käyttäjää, ohjataan kirjautumiseen.");
         window.location.href = 'index.html';
     }
 });
 
-
-// --- 2. Lataa KAIKKIEN työntekijöiden edistyminen ---
+// --- 2. RAPORTTIEN LATAUS ---
 
 async function loadAllEmployeeProgress() {
     reportContainer.innerHTML = 'Ladataan tietoja...';
 
     try {
-        const snapshot = await db.collection('userProgress').get();
+        const user = firebase.auth().currentUser;
+        const tokenResult = await user.getIdTokenResult();
+        
+        const isSuperAdmin = tokenResult.claims.superAdmin;
+        const managedDept = tokenResult.claims.managedDepartment;
 
-        // LISÄTTY UUSI SARAKE "Häät (Valmis)"
+        let query = db.collection('userProgress');
+
+        // Suodatetaan osaston mukaan (ellei ole Super Admin)
+        if (isSuperAdmin) {
+            console.log("Super Admin - ladataan kaikki.");
+        } else if (managedDept) {
+            console.log(`Osastoesimies (${managedDept})`);
+            query = query.where('department', '==', managedDept);
+        }
+
+        // Suodatetaan päättyneet pois
+        query = query.where('employmentEnded', '!=', true);
+
+        const snapshot = await query.get();
+        
+        // Rakennetaan taulukko
         let html = `
             <table>
                 <tr>
                     <th>Työntekijä</th>
-                    <th>Suntio (Valmis)</th>
-                    <th>Toimisto (Valmis)</th>
-                    <th>Häät (Valmis)</th> 
-                    <th>Viimeksi päivitetty</th>
+                    <th>Suntio %</th>
+                    <th>Toimisto %</th>
+                    <th>Häät %</th>
+                    <th>Päivitetty</th>
+                    <th>Toiminnot</th>
                 </tr>
         `;
 
         snapshot.forEach(doc => {
             const data = doc.data();
-
-            // Nämä käyttävät nyt uutta, älykästä calculateProgress-funktiota
+            
             const suntioProgress = calculateProgress(data.suntio);
             const toimistoProgress = calculateProgress(data.toimisto);
-            const haatProgress = calculateProgress(data.haat); // LASKETAAN UUSI OSIO
+            const haatProgress = calculateProgress(data.haat);
+            
+            // Linkki yksilöraporttiin
+            const userLink = `<a href="employee-report.html?uid=${doc.id}" target="_blank">${data.userEmail || 'Tuntematon'}</a>`;
+            const lastUpdated = data.lastUpdated ? data.lastUpdated.toDate().toLocaleString('fi-FI') : '-';
 
-            const lastUpdated = data.lastUpdated ? data.lastUpdated.toDate().toLocaleString('fi-FI') : 'Ei tietoa';
-
-            // LISÄTTY UUSI SARAKE (<td>) RIVILLE
             html += `
                 <tr>
-                    <td>${data.userEmail || doc.id}</td>
+                    <td>${userLink}</td>
                     <td>${suntioProgress}%</td>
                     <td>${toimistoProgress}%</td>
-                    <td>${haatProgress}%</td> 
+                    <td>${haatProgress}%</td>
                     <td>${lastUpdated}</td>
+                    <td>
+                        <button class="end-contract-btn" data-userid="${doc.id}">Päätä työsuhde</button>
+                    </td>
                 </tr>
             `;
         });
-
+        
         html += '</table>';
         reportContainer.innerHTML = html;
 
     } catch (error) {
         console.error("Virhe raporttien lataamisessa:", error);
-        reportContainer.innerHTML = '<p style="color:red;">Tietojen lataaminen epäonnistui. Tarkista tietoturvasäännöt.</p>';
+        reportContainer.innerHTML = '<p style="color:red;">Latausvirhe (tarkista konsoli F12). Saattaa vaatia indeksin luonnin.</p>';
     }
 }
 
-// Apufunktio edistymisen laskentaan
+// Apufunktio prosentin laskentaan
 function calculateProgress(section) {
-    if (!section) return 0; 
+    if (!section) return 0;
+    const tasks = Object.values(section);
+    if (tasks.length === 0) return 0;
 
-    const tasks = Object.values(section); 
-    if (tasks.length === 0) return 0; 
-
-    let completedTasks = 0;
-
+    let completed = 0;
     tasks.forEach(task => {
-        if (typeof task === 'boolean' && task === true) {
-            // Vanha datatyyppi (esim. suntio: { task1: true })
-            completedTasks++;
-        } else if (typeof task === 'object' && task !== null && task.completed === true) {
-            // Uusi datatyyppi (esim. haat: { task1: { completed: true, ... } })
-            completedTasks++;
-        }
+        if (task === true) completed++; // Vanha tyyli
+        else if (task && task.completed === true) completed++; // Uusi tyyli
     });
-
-    return Math.round((completedTasks / tasks.length) * 100);
+    
+    return Math.round((completed / tasks.length) * 100);
 }
 
-// --- 3. Kirjaudu ulos ---
+// --- 3. TIEDOSTOJEN LATAUS (STORAGE) ---
+
+async function uploadSharedDocument(file) {
+    uploadStatus.textContent = "Ladataan...";
+    uploadStatus.style.color = "blue";
+
+    try {
+        // 1. Luodaan viittaus Storageen
+        const storageRef = storage.ref(`shared_documents/${file.name}`);
+        
+        // 2. Lähetetään tiedosto
+        await storageRef.put(file);
+        
+        // 3. Haetaan latauslinkki
+        const downloadURL = await storageRef.getDownloadURL();
+        
+        // 4. Tallennetaan linkki tietokantaan
+        await db.collection('sharedDocuments').add({
+            fileName: file.name,
+            url: downloadURL,
+            uploadedAt: firebase.firestore.Timestamp.now()
+        });
+
+        uploadStatus.textContent = `✅ Tiedosto "${file.name}" ladattu ja jaettu!`;
+        uploadStatus.style.color = "green";
+        fileUploadInput.value = ""; // Tyhjennetään kenttä
+
+    } catch (error) {
+        console.error("Latausvirhe:", error);
+        uploadStatus.textContent = "❌ Lataus epäonnistui: " + error.message;
+        uploadStatus.style.color = "red";
+    }
+}
+
+// --- 4. TYÖSUHTEEN PÄÄTTÄMINEN ---
+
+async function markEmploymentEnded(userId) {
+    try {
+        await db.collection('userProgress').doc(userId).update({
+            employmentEnded: true,
+            employmentEndDate: firebase.firestore.Timestamp.now()
+        });
+        alert("Työsuhde merkitty päättyneeksi.");
+        loadAllEmployeeProgress(); // Päivitä lista
+    } catch (error) {
+        console.error("Virhe:", error);
+        alert("Virhe toiminnossa.");
+    }
+}
+
+// --- 5. ULOSKIRJAUTUMINEN ---
 
 logoutButton.addEventListener('click', () => {
     auth.signOut().then(() => {
-        console.log("Kirjauduttu ulos.");
         window.location.href = 'index.html';
     });
 });
