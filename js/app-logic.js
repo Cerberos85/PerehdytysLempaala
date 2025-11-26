@@ -3,50 +3,37 @@
 const auth = firebase.auth();
 const db = firebase.firestore();
 
-// Pidetään kirjaa, kuka käyttäjä on
 let currentUser; 
 
-// Haetaan HTML-elementit
 const saveButton = document.getElementById('saveButton');
 const logoutButton = document.getElementById('logoutButton');
 const saveStatus = document.getElementById('saveStatus');
 
-// --- 1. Tarkista onko käyttäjä kirjautunut ---
+// --- 1. AUTH LOGIIKKA ---
 
-// Tämä on "vahti", joka tarkistaa sivun latautuessa, onko käyttäjä kirjautunut.
 auth.onAuthStateChanged(async (user) => {
     if (user) {
-        // Käyttäjä ON kirjautunut
         currentUser = user; 
         console.log("Käyttäjä ladattu:", user.uid);
 
-        // Hae käyttäjän roolit (Custom Claims)
-        const idTokenResult = await user.getIdTokenResult(true); // true = pakota päivitys
-        const userRole = idTokenResult.claims.employeeRole; // Esim. "Suntio" tai "Toimisto"
+        const idTokenResult = await user.getIdTokenResult(true); 
+        const userRole = idTokenResult.claims.employeeRole; 
 
         console.log("Käyttäjän rooli:", userRole);
 
-        // --- TÄSSÄ TAPAHTUU ITSE NÄYTÄMINEN ---
-        // Näytä osiot roolin perusteella
+        // Näytä oikeat osiot
         showSectionsBasedOnRole(userRole);
 
-        // Nämä lataavat kaiken datan. Se ei haittaa,
-        // koska väärät osiot ovat piilossa (display:none),
-        // ja vain näkyvien osien checkboxit päivittyvät.
         loadUserProgress(user.uid);
-
-        // Ladataan jaetut dokumentit (jotka näkyvät kaikille)
         loadSharedDocuments(); 
 
     } else {
-        // Käyttäjä EI OLE kirjautunut
         console.log("Ei käyttäjää, ohjataan kirjautumiseen.");
         window.location.href = 'index.html';
     }
 });
 
-
-// --- 2. Lataa käyttäjän edistyminen ---
+// --- 2. LATAUSLOGIIKKA ---
 
 async function loadUserProgress(uid) {
     const docRef = db.collection('userProgress').doc(uid);
@@ -58,31 +45,26 @@ async function loadUserProgress(uid) {
             const data = doc.data();
             console.log("LADATUT TIEDOT:", data);
 
-            // Vanhat osiot (toimivat edelleen)
-            document.getElementById('suntio-task1').checked = data.suntio?.task1 || false;
-            document.getElementById('suntio-task2').checked = data.suntio?.task2 || false;
-            document.getElementById('toimisto-task1').checked = data.toimisto?.task1 || false;
-            document.getElementById('toimisto-task2').checked = data.toimisto?.task2 || false;
+            // 1. SUNTIO
+            updateTaskUI('suntio-task1', data.suntio?.task1);
+            updateTaskUI('suntio-task2', data.suntio?.task2);
 
-            // UUSI HÄÄT-OSIO
-            // Ladataan checkboxin tila
-            document.getElementById('haat-task1-kirkko').checked = data.haat?.task1?.completed || false;
-            document.getElementById('haat-task2-opastus').checked = data.haat?.task2?.completed || false;
+            // 2. TOIMISTO
+            updateTaskUI('toimisto-task1', data.toimisto?.task1);
+            updateTaskUI('toimisto-task2', data.toimisto?.task2);
 
-            // Ladataan ja muotoillaan päivämäärä, jos se on olemassa
-            if (data.haat?.task1?.date) {
-                const date = data.haat.task1.date.toDate().toLocaleString('fi-FI', { day: 'numeric', month: 'short', year: 'numeric' });
-                document.getElementById('haat-task1-date').textContent = `(Kuitattu: ${date})`;
-            } else {
-                document.getElementById('haat-task1-date').textContent = ""; // Tyhjennetään, jos ei kuitattu
-            }
+            // 3. HÄÄT
+            updateTaskUI('haat-task1-kirkko', data.haat?.task1, 'haat-task1-date');
+            updateTaskUI('haat-task2-opastus', data.haat?.task2, 'haat-task2-date');
 
-            if (data.haat?.task2?.date) {
-                const date = data.haat.task2.date.toDate().toLocaleString('fi-FI', { day: 'numeric', month: 'short', year: 'numeric' });
-                document.getElementById('haat-task2-date').textContent = `(Kuitattu: ${date})`;
-            } else {
-                document.getElementById('haat-task2-date').textContent = "";
-            }
+            // 4. HAUTAUSTOIMI
+            updateTaskUI('hautaus-task1', data.hautaustoimi?.task1, 'hautaus-task1-date');
+            
+            // 5. SUNTIOTYÖ (Tämä ladataan nyt oikein, jos ID täsmää HTML:ään)
+            updateTaskUI('suntiotyo-task1', data.suntiotyo?.task1, 'suntiotyo-task1-date');
+            
+            // 6. LAPSI- JA PERHETYÖ
+            updateTaskUI('lapsi-task1', data.lapsiperhe?.task1, 'lapsi-task1-date');
 
         } else {
             console.log("Käyttäjälle ei löydy aiempia tietoja.");
@@ -92,43 +74,67 @@ async function loadUserProgress(uid) {
     }
 }
 
-// --- 3. Tallenna edistyminen ---
+function updateTaskUI(checkboxId, taskData, dateSpanId = null) {
+    const checkbox = document.getElementById(checkboxId);
+    if (!checkbox) return;
+
+    let isChecked = false;
+    let dateText = "";
+
+    if (typeof taskData === 'boolean') {
+        isChecked = taskData;
+    } else if (taskData && taskData.completed) {
+        isChecked = true;
+        if (taskData.date && dateSpanId) {
+            const dateObj = taskData.date.toDate();
+            const dateStr = dateObj.toLocaleString('fi-FI', { day: 'numeric', month: 'short', year: 'numeric' });
+            dateText = `(Kuitattu: ${dateStr})`;
+        }
+    }
+
+    checkbox.checked = isChecked;
+
+    if (dateSpanId) {
+        const dateElement = document.getElementById(dateSpanId);
+        if (dateElement) dateElement.textContent = dateText;
+    }
+}
+
+// --- 3. TALLENNUSLOGIIKKA ---
 
 async function saveProgress() {
     if (!currentUser) return; 
 
-    const saveStatus = document.getElementById('saveStatus');
     saveStatus.textContent = "Tallennetaan...";
-    
-    // Luodaan aikaleima
     const now = firebase.firestore.Timestamp.now(); 
 
-    // --- 1. UUSI LISÄYS: Haetaan käyttäjän rooli (department) ---
-    // Tämä on kriittinen vaihe hierarkiaa varten.
+    // Haetaan rooli
     let myRole = 'Muu';
     try {
         const idTokenResult = await currentUser.getIdTokenResult();
-        // Tallennetaan rooli (esim. "Suntio" tai "Toimisto") muuttujaan
         if (idTokenResult.claims.employeeRole) {
             myRole = idTokenResult.claims.employeeRole;
         }
     } catch (e) {
-        console.log("Roolin haku epäonnistui, käytetään oletusta.", e);
+        console.log("Roolin haku epäonnistui", e);
     }
-    // -------------------------------------------------------------
 
-    // Haetaan checkboxien tilat (mukaan lukien aiemmin tehdyt Häät-osiot)
-    const haatTask1Checked = document.getElementById('haat-task1-kirkko') ? document.getElementById('haat-task1-kirkko').checked : false;
-    const haatTask2Checked = document.getElementById('haat-task2-opastus') ? document.getElementById('haat-task2-opastus').checked : false;
+    // Apufunktio checkboxin ja päivämäärän tallennusobjektin luontiin
+    const getTaskObj = (id) => {
+        const el = document.getElementById(id);
+        const isChecked = el ? el.checked : false;
+        return {
+            completed: isChecked,
+            date: isChecked ? now : null
+        };
+    };
 
+    // Luodaan tallennettava data
     const progressData = {
         userEmail: currentUser.email, 
-        
-        // --- 2. UUSI LISÄYS: Tallennetaan osastotieto tietokantaan ---
         department: myRole, 
-        // -------------------------------------------------------------
-
-        // Vanhat osiot
+        
+        // Vanhat (boolean)
         suntio: {
             task1: document.getElementById('suntio-task1') ? document.getElementById('suntio-task1').checked : false,
             task2: document.getElementById('suntio-task2') ? document.getElementById('suntio-task2').checked : false,
@@ -138,30 +144,31 @@ async function saveProgress() {
             task2: document.getElementById('toimisto-task2') ? document.getElementById('toimisto-task2').checked : false,
         },
         
-        // Häät-osio (päivämäärälogiikalla)
+        // Uudet (objekti + pvm)
         haat: {
-            task1: {
-                completed: haatTask1Checked,
-                date: haatTask1Checked ? now : null 
-            },
-            task2: {
-                completed: haatTask2Checked,
-                date: haatTask2Checked ? now : null
-            }
+            task1: getTaskObj('haat-task1-kirkko'),
+            task2: getTaskObj('haat-task2-opastus')
         },
+        hautaustoimi: {
+            task1: getTaskObj('hautaus-task1')
+        },
+        suntiotyo: {
+            task1: getTaskObj('suntiotyo-task1')
+        },
+        lapsiperhe: {
+            task1: getTaskObj('lapsi-task1')
+        },
+
         lastUpdated: now 
     };
 
     try {
-        // Tallennetaan tiedot Firestoreen
         await db.collection('userProgress').doc(currentUser.uid).set(progressData, { merge: true });
         
         saveStatus.textContent = "Edistyminen tallennettu!";
         console.log(`Tallennettu osastolla: ${myRole}`);
         
-        // Päivitetään näkymä (esim. päivämäärät)
         loadUserProgress(currentUser.uid); 
-        
         setTimeout(() => { saveStatus.textContent = ""; }, 3000);
 
     } catch (error) {
@@ -170,64 +177,55 @@ async function saveProgress() {
     }
 }
 
-    try {
-        // Huom: Kun käyttäjä poistaa ruksin, 'date' muuttuu 'null'-arvoksi.
-        // Jos haluat säilyttää ENSIMMÄISEN kuittauspäivän ikuisesti, 
-        // logiikkaa täytyy monimutkaistaa (vaatisi datan lukemista ennen tallennusta).
-        // Tämä "viimeisin kuittaus" -tapa on yksinkertaisempi.
-
-        await db.collection('userProgress').doc(currentUser.uid).set(progressData, { merge: true });
-
-        saveStatus.textContent = "Edistyminen tallennettu!";
-        console.log("Tiedot tallennettu!");
-
-        // Päivitetään päivämääränäkymä heti tallennuksen jälkeen
-        loadUserProgress(currentUser.uid); 
-
-        setTimeout(() => { saveStatus.textContent = ""; }, 3000);
-
-    } catch (error) {
-        console.error("Tallennusvirhe:", error);
-        saveStatus.textContent = "Tallennus epäonnistui.";
-    }
-
-// Lisätään tallennusnappiin kuuntelija
 saveButton.addEventListener('click', saveProgress);
-/**
- * Etsii HTML-sivulta osiot ja näyttää ne käyttäjän roolin perusteella.
- * @param {string} role - Käyttäjän rooli, esim. "Suntio" tai "Toimisto".
- */
+
+// --- 4. NÄKYMÄN HALLINTA (TÄMÄ OLI VIKANA) ---
+
 function showSectionsBasedOnRole(role) {
+    console.log("Päivitetään näkymä roolille:", role);
 
-    // Hae kaikki mahdolliset osiot
-    const suntioSection = document.getElementById('section-suntio');
-    const toimistoSection = document.getElementById('section-toimisto');
+    // 1. Piilotetaan ensin kaikki osiot
+    const allSections = [
+        'section-suntio', 
+        'section-toimisto', 
+        'section-hautaustoimi', 
+        'section-suntiotyo', 
+        'section-lapsiperhe'
+    ];
+    
+    allSections.forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.style.display = 'none';
+    });
 
-    // Jaettujen dokumenttien osio (#section-shared-docs) on aina näkyvissä,
-    // joten emme koske siihen.
-
-    if (role === 'Suntio') {
-        // Näytä Suntion osio
-        if (suntioSection) suntioSection.style.display = 'block';
-
-    } else if (role === 'Toimisto') {
-        // Näytä Toimiston osio
-        if (toimistoSection) toimistoSection.style.display = 'block';
-
-    } else {
-        // Tuntematon rooli tai roolia ei ole asetettu
-        console.warn("Ei tunnistettua roolia. Käyttäjä ei näe perehdytysosioita.");
-        // Voit myös näyttää tässä jonkin oletusnäkymän tai virheilmoituksen.
+    // 2. Näytetään vain roolia vastaava
+    if (role === 'Hautaustoimi') {
+        const el = document.getElementById('section-hautaustoimi');
+        if (el) el.style.display = 'block';
+    } 
+    else if (role === 'Suntiotyö') { 
+        // TÄMÄ PUUTTUI AIEMMIN!
+        const el = document.getElementById('section-suntiotyo');
+        if (el) el.style.display = 'block';
+    } 
+    else if (role === 'Lapsi ja perhetyö') {
+        const el = document.getElementById('section-lapsiperhe');
+        if (el) el.style.display = 'block';
+    }
+    else if (role === 'Suntio') { 
+        const el = document.getElementById('section-suntio');
+        if (el) el.style.display = 'block';
+    }
+    else if (role === 'Toimisto') {
+        const el = document.getElementById('section-toimisto');
+        if (el) el.style.display = 'block';
     }
 }
 
-// --- 4. Kirjaudu ulos ---
+// --- 5. ULOSKIRJAUTUMINEN ---
 
 logoutButton.addEventListener('click', () => {
     auth.signOut().then(() => {
-        console.log("Kirjauduttu ulos.");
-        window.location.href = 'index.html'; // Ohjataan takaisin kirjautumissivulle
-    }).catch((error) => {
-        console.error("Uloskirjautumisvirhe:", error);
+        window.location.href = 'index.html';
     });
 });
