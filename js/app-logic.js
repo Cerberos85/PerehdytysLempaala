@@ -144,10 +144,6 @@ async function saveProgress() {
             task1: document.getElementById('toimisto-task1') ? document.getElementById('toimisto-task1').checked : false,
             task2: document.getElementById('toimisto-task2') ? document.getElementById('toimisto-task2').checked : false,
         },
-        haat: {
-            task1: getTaskObj('haat-task1-kirkko'),
-            task2: getTaskObj('haat-task2-opastus')
-        },
         hautaustoimi: {
             task1: getTaskObj('hautaus-task1')
         },
