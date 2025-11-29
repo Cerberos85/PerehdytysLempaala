@@ -92,7 +92,10 @@ async function loadAllEmployeeProgress() {
                     <th>Työntekijä</th>
                     <th>Suntio %</th>
                     <th>Toimisto %</th>
-                    <th>Hautaustoimi %</th> <th>Suntiotyö %</th>    <th>Lapsiperhe %</th>   <th>Häät %</th>
+                    <th>Hautaustoimi %</th> 
+                    <th>Suntiotyö %</th>    
+                    <th>Lapsiperhe %</th>   
+                    <th>Häät %</th>
                     <th>Päivitetty</th>
                     <th>Toiminnot</th>
                 </tr>
@@ -104,10 +107,9 @@ async function loadAllEmployeeProgress() {
             // --- LASKETAAN KAIKKI ROOLIT ---
             const suntioProgress = calculateProgress(data.suntio);
             const toimistoProgress = calculateProgress(data.toimisto);
-            const haatProgress = calculateProgress(data.haat);
             
             // Uudet osiot
-            const hautausProgress = calculateProgress(data.hautaustoimi);
+            const hautausProgress = calculateProgress(data.hautaus);
             const suntiotyoProgress = calculateProgress(data.suntiotyo);
             const lapsiProgress = calculateProgress(data.lapsiperhe);
             
@@ -119,7 +121,10 @@ async function loadAllEmployeeProgress() {
                     <td>${userLink}</td>
                     <td>${suntioProgress}%</td>
                     <td>${toimistoProgress}%</td>
-                    <td>${hautausProgress}%</td>    <td>${suntiotyoProgress}%</td>  <td>${lapsiProgress}%</td>      <td>${haatProgress}%</td>
+                    <td>${hautausProgress}%</td>    
+                    <td>${suntiotyoProgress}%</td>  
+                    <td>${lapsiProgress}%</td>      
+                    <td>${haatProgress}%</td>
                     <td>${lastUpdated}</td>
                     <td>
                         <button class="end-contract-btn" data-userid="${doc.id}">Päätä työsuhde</button>

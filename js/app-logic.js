@@ -62,7 +62,7 @@ async function loadUserProgress(uid) {
             updateTaskUI('haat-task2-opastus', data.haat?.task2, 'haat-task2-date');
 
             // 4. HAUTAUSTOIMI
-            updateTaskUI('hautaus-task1', data.hautaustoimi?.task1, 'hautaus-task1-date');
+            updateTaskUI('hautaus-task1', data.hautaus?.task1, 'hautaus-task1-date');
             
             // 5. SUNTIOTYÖ
             updateTaskUI('suntiotyo-task1', data.suntiotyo?.task1, 'suntiotyo-task1-date');
