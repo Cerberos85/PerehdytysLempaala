@@ -181,7 +181,7 @@ function showSectionsBasedOnRole(role) {
     const allSections = [
         'section-suntio', 
         'section-toimisto', 
-        'section-hautaustoimi', 
+        'section-hautaus', 
         'section-suntiotyo', 
         'section-lapsiperhe'
     ];
@@ -192,7 +192,7 @@ function showSectionsBasedOnRole(role) {
     });
 
     if (role === 'Hautaus') {
-        const el = document.getElementById('section-hautaustoimi');
+        const el = document.getElementById('section-hautaus');
         if (el) el.style.display = 'block';
     } 
     else if (role === 'Suntiotyö') { 
