@@ -191,7 +191,7 @@ function showSectionsBasedOnRole(role) {
         if (el) el.style.display = 'none';
     });
 
-    if (role === 'Hautaustoimi') {
+    if (role === 'Hautaus') {
         const el = document.getElementById('section-hautaustoimi');
         if (el) el.style.display = 'block';
     } 
