@@ -73,7 +73,7 @@ async function loadAllEmployeeProgress() {
 
         let query = db.collection('userProgress');
 
-        // Suodatetaan osaston mukaan
+        // Suodatetaan osaston mukaan (Super Admin näkee kaikki)
         if (isSuperAdmin) {
             console.log("Super Admin - ladataan kaikki.");
         } else if (managedDept) {
@@ -81,22 +81,23 @@ async function loadAllEmployeeProgress() {
             query = query.where('department', '==', managedDept);
         }
 
+        // Suodatetaan päättyneet pois
         query = query.where('employmentEnded', '!=', true);
 
         const snapshot = await query.get();
         
-        // --- PÄIVITETTY TAULUKON OTSIKOT ---
+        // --- PÄIVITETTY TAULUKKO: LISÄTTY 'ROOLI' SARAKE ---
         let html = `
-            <div style="overflow-x: auto;"> <table>
+            <div style="overflow-x: auto;"> 
+            <table>
                 <tr>
                     <th>Työntekijä</th>
-                    <th>Suntio %</th>
+                    <th style="background-color: #e8f0fe;">Rooli</th> <th>Suntio %</th>
                     <th>Toimisto %</th>
-                    <th>Hautaustoimi %</th> 
+                    <th>Hautaus %</th> 
                     <th>Suntiotyö %</th>    
                     <th>Lapsiperhe %</th>   
                     <th>Häät %</th>
-                    <th>Päivitetty</th>
                     <th>Toiminnot</th>
                 </tr>
         `;
@@ -104,28 +105,34 @@ async function loadAllEmployeeProgress() {
         snapshot.forEach(doc => {
             const data = doc.data();
             
-            // --- LASKETAAN KAIKKI ROOLIT ---
+            // Haetaan rooli tietokannasta (tai näytetään '-')
+            const userRole = data.department || '-';
+
+            // Lasketaan prosentit (Varmista että nimet täsmäävät tietokantaan!)
             const suntioProgress = calculateProgress(data.suntio);
             const toimistoProgress = calculateProgress(data.toimisto);
+            const haatProgress = calculateProgress(data.haat);
             
-            // Uudet osiot
-            const hautausProgress = calculateProgress(data.hautaus);
+            // HUOM: Tarkista ovatko nämä tietokannassa 'hautaus' vai 'hautaustoimi'?
+            // Koodi yrittää nyt lukea molempia varmuuden vuoksi.
+            const hautausProgress = calculateProgress(data.hautaustoimi || data.hautaus); 
             const suntiotyoProgress = calculateProgress(data.suntiotyo);
             const lapsiProgress = calculateProgress(data.lapsiperhe);
             
             const userLink = `<a href="employee-report.html?uid=${doc.id}" target="_blank">${data.userEmail || 'Tuntematon'}</a>`;
-            const lastUpdated = data.lastUpdated ? data.lastUpdated.toDate().toLocaleString('fi-FI') : '-';
+
+            // Korostetaan riviä hieman, jos rooli puuttuu
+            const roleStyle = userRole === '-' ? 'color: red; font-weight: bold;' : '';
 
             html += `
                 <tr>
                     <td>${userLink}</td>
-                    <td>${suntioProgress}%</td>
+                    <td style="${roleStyle}">${userRole}</td> <td>${suntioProgress}%</td>
                     <td>${toimistoProgress}%</td>
                     <td>${hautausProgress}%</td>    
                     <td>${suntiotyoProgress}%</td>  
                     <td>${lapsiProgress}%</td>      
                     <td>${haatProgress}%</td>
-                    <td>${lastUpdated}</td>
                     <td>
                         <button class="end-contract-btn" data-userid="${doc.id}">Päätä työsuhde</button>
                     </td>
@@ -138,10 +145,9 @@ async function loadAllEmployeeProgress() {
 
     } catch (error) {
         console.error("Virhe raporttien lataamisessa:", error);
-        reportContainer.innerHTML = '<p style="color:red;">Latausvirhe (tarkista konsoli F12).</p>';
+        reportContainer.innerHTML = `<p style="color:red;">Latausvirhe: ${error.message}</p>`;
     }
 }
-
 // --- 3. TIEDOSTOJEN LATAUS (STORAGE) ---
 
 async function uploadSharedDocument(file) {
