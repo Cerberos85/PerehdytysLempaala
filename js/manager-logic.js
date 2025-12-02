@@ -108,19 +108,18 @@ async function loadAllEmployeeProgress() {
             // Haetaan rooli tietokannasta (tai näytetään '-')
             const userRole = data.department || '-';
 
-            // Lasketaan prosentit (Varmista että nimet täsmäävät tietokantaan!)
+            // Lasketaan prosentit
             const suntioProgress = calculateProgress(data.suntio);
             const toimistoProgress = calculateProgress(data.toimisto);
-            const haatProgress = calculateProgress(data.haat);
-            
-            // HUOM: Tarkista ovatko nämä tietokannassa 'hautaus' vai 'hautaustoimi'?
-            // Koodi yrittää nyt lukea molempia varmuuden vuoksi.
             const hautausProgress = calculateProgress(data.hautaustoimi || data.hautaus); 
             const suntiotyoProgress = calculateProgress(data.suntiotyo);
             const lapsiProgress = calculateProgress(data.lapsiperhe);
             
-            const userLink = `<a href="employee-report.html?uid=${doc.id}" target="_blank">${data.userEmail || 'Tuntematon'}</a>`;
+            // --- KORJAUS: LISÄTTY PUUTTUVA RIVI ---
+            const haatProgress = calculateProgress(data.haat); 
+            // --------------------------------------
 
+            const userLink = `<a href="employee-report.html?uid=${doc.id}" target="_blank">${data.userEmail || 'Tuntematon'}</a>`;
             // Korostetaan riviä hieman, jos rooli puuttuu
             const roleStyle = userRole === '-' ? 'color: red; font-weight: bold;' : '';
 
@@ -147,6 +146,23 @@ async function loadAllEmployeeProgress() {
         console.error("Virhe raporttien lataamisessa:", error);
         reportContainer.innerHTML = `<p style="color:red;">Latausvirhe: ${error.message}</p>`;
     }
+}
+function calculateProgress(categoryData) {
+    if (!categoryData) return 0;
+    
+    // Muutetaan objekti arvojen taulukoksi
+    const tasks = Object.values(categoryData);
+    if (tasks.length === 0) return 0;
+
+    let completedCount = 0;
+    tasks.forEach(task => {
+        // Tarkistetaan onko suora boolean (vanha data) vai objekti {completed: true}
+        if (task === true || (typeof task === 'object' && task !== null && task.completed === true)) {
+            completedCount++;
+        }
+    });
+
+    return Math.round((completedCount / tasks.length) * 100);
 }
 // --- 3. TIEDOSTOJEN LATAUS (STORAGE) ---
 

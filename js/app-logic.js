@@ -132,7 +132,7 @@ async function saveProgress() {
         };
     };
 
-    const progressData = {
+const progressData = {
         userEmail: currentUser.email, 
         department: myRole, 
         
@@ -144,6 +144,12 @@ async function saveProgress() {
             task1: document.getElementById('toimisto-task1') ? document.getElementById('toimisto-task1').checked : false,
             task2: document.getElementById('toimisto-task2') ? document.getElementById('toimisto-task2').checked : false,
         },
+        // --- KORJAUS: LISÄTTY HÄÄT ---
+        haat: {
+            task1: getTaskObj('haat-task1-kirkko'), // Varmista että ID on HTML:ssä oikein
+            task2: getTaskObj('haat-task2-opastus')
+        },
+        // -----------------------------
         hautaustoimi: {
             task1: getTaskObj('hautaus-task1')
         },
