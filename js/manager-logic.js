@@ -78,7 +78,7 @@ async function loadAllEmployeeProgress() {
 
         let query = db.collection('userProgress');
 
-        // Suodatetaan osaston mukaan (Super Admin näkee kaikki)
+        // 1. Suodatetaan osaston mukaan (Firestoressa)
         if (isSuperAdmin) {
             console.log("Super Admin - ladataan kaikki.");
         } else if (managedDept) {
@@ -86,8 +86,8 @@ async function loadAllEmployeeProgress() {
             query = query.where('department', '==', managedDept);
         }
 
-        // Suodatetaan päättyneet pois
-        query = query.where('employmentEnded', '!=', true);
+        // POISTETTU TÄSTÄ SE ONGELMALLINEN '!=' KYSELY
+        // query = query.where('employmentEnded', '!=', true); 
 
         const snapshot = await query.get();
 
@@ -96,7 +96,6 @@ async function loadAllEmployeeProgress() {
             return;
         }
         
-        // Luodaan taulukko
         let html = `
             <div style="overflow-x: auto;"> 
             <table class="report-table">
@@ -116,22 +115,30 @@ async function loadAllEmployeeProgress() {
                 <tbody>
         `;
 
+        let visibleRows = 0;
+
         snapshot.forEach(doc => {
             const data = doc.data();
+
+            // --- 2. SUODATUS JAVASCRIPTISSÄ (KORJAUS) ---
+            // Jos työsuhde on merkitty päättyneeksi, ohitetaan tämä rivi
+            if (data.employmentEnded === true) {
+                return; 
+            }
+            visibleRows++;
+            // ---------------------------------------------
             
             const userRole = data.department || '-';
 
-            // Lasketaan prosentit dynaamisesti
+            // Lasketaan prosentit
             const suntioProgress = calculateProgress(data.suntio);
             const toimistoProgress = calculateProgress(data.toimisto);
             const hautausProgress = calculateProgress(data.hautaustoimi || data.hautaus); 
             const suntiotyoProgress = calculateProgress(data.suntiotyo);
             const lapsiProgress = calculateProgress(data.lapsiperhe);
-            const haatProgress = calculateProgress(data.haat); // Tämä puuttui aiemmin!
+            const haatProgress = calculateProgress(data.haat); 
 
-            // Linkki yksilöraporttiin
             const userLink = `<a href="employee-report.html?uid=${doc.id}" target="_blank">${data.userEmail || 'Tuntematon'}</a>`;
-
             const roleStyle = userRole === '-' ? 'color: red; font-weight: bold;' : '';
 
             html += `
@@ -152,7 +159,13 @@ async function loadAllEmployeeProgress() {
         });
         
         html += '</tbody></table></div>';
-        reportContainer.innerHTML = html;
+        
+        // Jos kaikki filtteröitiin pois, näytetään viesti
+        if (visibleRows === 0) {
+            reportContainer.innerHTML = '<p>Ei aktiivisia työntekijöitä.</p>';
+        } else {
+            reportContainer.innerHTML = html;
+        }
 
     } catch (error) {
         console.error("Virhe raporttien lataamisessa:", error);
