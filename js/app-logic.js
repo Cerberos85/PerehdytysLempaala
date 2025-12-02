@@ -49,15 +49,17 @@ async function loadUserProgress(uid) {
             const data = doc.data();
             console.log("LADATUT TIEDOT:", data);
 
-            // 1. SUNTIO
-            updateTaskUI('suntio-task1', data.suntio?.task1);
-            updateTaskUI('suntio-task2', data.suntio?.task2);
+            // 1. SUNTIO (Nyt kaikki 12 tehtävää)
+            // Käytetään silmukkaa tai listataan selkeyden vuoksi:
+            for (let i = 1; i <= 12; i++) {
+                updateTaskUI(`suntio-task${i}`, data.suntio?.[`task${i}`]);
+            }
 
             // 2. TOIMISTO
             updateTaskUI('toimisto-task1', data.toimisto?.task1);
             updateTaskUI('toimisto-task2', data.toimisto?.task2);
 
-            // 3. HÄÄT
+            // 3. HÄÄT (Korjattu: hakee nyt oikein datan)
             updateTaskUI('haat-task1-kirkko', data.haat?.task1, 'haat-task1-date');
             updateTaskUI('haat-task2-opastus', data.haat?.task2, 'haat-task2-date');
 
@@ -123,35 +125,47 @@ async function saveProgress() {
         console.log("Roolin haku epäonnistui", e);
     }
 
+    // Apufunktio: Hakee objektin { completed: boolean, date: Timestamp/null }
     const getTaskObj = (id) => {
         const el = document.getElementById(id);
         const isChecked = el ? el.checked : false;
+        // Jos elementtiä ei löydy (HTML puuttuu), tulostetaan varoitus konsoliin
+        if (!el) console.warn(`Elementtiä ID:llä '${id}' ei löytynyt tallennuksessa!`);
+        
         return {
             completed: isChecked,
             date: isChecked ? now : null
         };
     };
 
-const progressData = {
+    // Apufunktio: Hakee pelkän booleanin (Suntio/Toimisto vanha tyyli)
+    const getSimpleBool = (id) => {
+        const el = document.getElementById(id);
+        return el ? el.checked : false;
+    };
+
+    // Rakennetaan suntio-objekti dynaamisesti (task1 - task12)
+    let suntioTasks = {};
+    for (let i = 1; i <= 12; i++) {
+        suntioTasks[`task${i}`] = getSimpleBool(`suntio-task${i}`);
+    }
+
+    const progressData = {
         userEmail: currentUser.email, 
         department: myRole, 
         
-        suntio: {
-            task1: document.getElementById('suntio-task1') ? document.getElementById('suntio-task1').checked : false,
-            task2: document.getElementById('suntio-task2') ? document.getElementById('suntio-task2').checked : false,
-        },
+        suntio: suntioTasks, // Sisältää nyt task1...task12
+
         toimisto: {
-            task1: document.getElementById('toimisto-task1') ? document.getElementById('toimisto-task1').checked : false,
-            task2: document.getElementById('toimisto-task2') ? document.getElementById('toimisto-task2').checked : false,
+            task1: getSimpleBool('toimisto-task1'),
+            task2: getSimpleBool('toimisto-task2'),
         },
-        // --- KORJAUS: LISÄTTY HÄÄT ---
         haat: {
-            task1: getTaskObj('haat-task1-kirkko'), // Varmista että ID on HTML:ssä oikein
+            task1: getTaskObj('haat-task1-kirkko'),
             task2: getTaskObj('haat-task2-opastus')
         },
-        // -----------------------------
         hautaustoimi: {
-            task1: getTaskObj('hautaus-task1')
+            task1: getTaskObj('hautaus-task1') // Huom: HTML ID oli hautaus-task1
         },
         suntiotyo: {
             task1: getTaskObj('suntiotyo-task1')
@@ -163,10 +177,14 @@ const progressData = {
     };
 
     try {
+        // merge: true on tärkeä, jotta emme ylikirjoita vahingossa muita kenttiä
         await db.collection('userProgress').doc(currentUser.uid).set(progressData, { merge: true });
         
         saveStatus.textContent = "Edistyminen tallennettu!";
+        
+        // Ladataan tiedot heti takaisin, jotta päivämäärät (jos niitä on) päivittyvät UI:han
         loadUserProgress(currentUser.uid); 
+        
         setTimeout(() => { saveStatus.textContent = ""; }, 3000);
 
     } catch (error) {
