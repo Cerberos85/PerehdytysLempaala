@@ -58,17 +58,8 @@ async function loadUserProgress(uid) {
             // 2. TOIMISTO
             updateTaskUI('toimisto-task1', data.toimisto?.task1);
             updateTaskUI('toimisto-task2', data.toimisto?.task2);
-
-            // 3. HÄÄT (Korjattu: hakee nyt oikein datan)
-            updateTaskUI('haat-task1-kirkko', data.haat?.task1, 'haat-task1-date');
-            updateTaskUI('haat-task2-opastus', data.haat?.task2, 'haat-task2-date');
-
-            // 4. HAUTAUSTOIMI
-            updateTaskUI('hautaus-task1', data.hautaus?.task1, 'hautaus-task1-date');
-            
-            // 5. SUNTIOTYÖ
-            updateTaskUI('suntiotyo-task1', data.suntiotyo?.task1, 'suntiotyo-task1-date');
-            
+            // 3. HAUTAUSTOIMI
+            updateTaskUI('hautaus-task1', data.hautaus?.task1, 'hautaus-task1-date');      
             // 6. LAPSI- JA PERHETYÖ
             updateTaskUI('lapsi-task1', data.lapsiperhe?.task1, 'lapsi-task1-date');
 
@@ -160,15 +151,8 @@ async function saveProgress() {
             task1: getSimpleBool('toimisto-task1'),
             task2: getSimpleBool('toimisto-task2'),
         },
-        haat: {
-            task1: getTaskObj('haat-task1-kirkko'),
-            task2: getTaskObj('haat-task2-opastus')
-        },
         hautaustoimi: {
             task1: getTaskObj('hautaus-task1') // Huom: HTML ID oli hautaus-task1
-        },
-        suntiotyo: {
-            task1: getTaskObj('suntiotyo-task1')
         },
         lapsiperhe: {
             task1: getTaskObj('lapsi-task1')
@@ -177,12 +161,12 @@ async function saveProgress() {
     };
 
     try {
-        // merge: true on tärkeä, jotta emme ylikirjoita vahingossa muita kenttiä
+
         await db.collection('userProgress').doc(currentUser.uid).set(progressData, { merge: true });
         
         saveStatus.textContent = "Edistyminen tallennettu!";
         
-        // Ladataan tiedot heti takaisin, jotta päivämäärät (jos niitä on) päivittyvät UI:han
+
         loadUserProgress(currentUser.uid); 
         
         setTimeout(() => { saveStatus.textContent = ""; }, 3000);
@@ -201,8 +185,7 @@ function showSectionsBasedOnRole(role) {
     const allSections = [
         'section-suntio', 
         'section-toimisto', 
-        'section-hautaus', 
-        'section-suntiotyo', 
+        'section-hautaus',  
         'section-lapsiperhe'
     ];
     
@@ -213,10 +196,6 @@ function showSectionsBasedOnRole(role) {
 
     if (role === 'Hautaus') {
         const el = document.getElementById('section-hautaus');
-        if (el) el.style.display = 'block';
-    } 
-    else if (role === 'Suntiotyö') { 
-        const el = document.getElementById('section-suntiotyo');
         if (el) el.style.display = 'block';
     } 
     else if (role === 'Lapsi ja perhetyö') {

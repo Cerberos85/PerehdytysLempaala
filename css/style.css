@@ -63,7 +63,7 @@ button:hover {
     border-radius: 4px;
 }
 
-/* Asettaa checkboxin ja tekstin nätisti vierekkäin */
+/* Asettaa checkboxin ja tekstin vierekkäin */
 .module div {
     display: flex;
     align-items: center;
