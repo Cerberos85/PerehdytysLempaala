@@ -7,32 +7,60 @@ body {
     margin: 0;
     padding: 0;
     background-color: #f4f4f4;
+    
+    /* FLEXBOX-KESKITTÄMINEN LISÄTTY TÄHÄN */
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh; /* Koko näytön korkeus */
 }
 
-header, main {
+header {
     padding: 15px;
+    text-align: center;
 }
 
-/* Keskittää sisällön nätisti työpöydällä, 
-  mutta antaa sen viedä koko leveyden mobiilissa.
-*/
-.login-container, main {
-    max-width: 800px; /* Maksimileveys työpöydällä */
-    margin: 20px auto; /* Keskittää automaattisesti */
+/* --- Kirjautumislaatikko (Keskitetty kortti) --- */
+.login-container {
+    max-width: 350px;
+    width: 100%;
+    margin: auto; /* Tämä + bodyn flexbox keskittää laatikon vaaka- ja pystysuunnassa */
     background-color: #ffffff;
+    padding: 40px;
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    text-align: center;
+    box-sizing: border-box;
+}
+
+.login-container h2 {
+    margin-top: 0;
+    margin-bottom: 20px;
+}
+
+/* --- Muiden sivujen pääsisältö (App & Manager) --- */
+main {
+    max-width: 800px; /* Maksimileveys työpöydällä */
+    width: 100%;
+    margin: 20px auto; /* Keskittää vaakasuunnassa yläreunaan */
+    background-color: #ffffff;
+    padding: 20px;
     border-radius: 8px;
     box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    box-sizing: border-box;
+    flex-grow: 1; /* Varmistaa, että main-osio täyttää tyhjän tilan */
 }
 
+/* --- Syötekentät ja napit --- */
 input[type="email"],
 input[type="password"],
 input[type="text"] {
     width: 100%; /* Vie aina 100% leveydestä */
-    padding: 10px;
-    margin-bottom: 10px;
+    padding: 12px;
+    margin-bottom: 15px;
     box-sizing: border-box; /* Estää paddingia rikkomasta leveyttä */
     border: 1px solid #ccc;
     border-radius: 4px;
+    font-size: 1rem;
 }
 
 button {
@@ -43,7 +71,9 @@ button {
     border-radius: 4px;
     cursor: pointer;
     font-size: 16px;
-    width: 100%; /* Napit vievät koko leveyden mobiilissa */
+    font-weight: bold;
+    width: 100%; /* Napit vievät koko leveyden mobiilissa ja login-laatikossa */
+    transition: background-color 0.3s ease;
 }
 
 button:hover {
@@ -53,6 +83,8 @@ button:hover {
 #logoutButton {
     width: auto; /* Älä pakota uloskirjautumisnappia koko leveydelle */
     background-color: #6c757d;
+    padding: 8px 15px;
+    font-size: 14px;
 }
 
 /* --- Perehdytysmoduulit --- */
@@ -93,41 +125,45 @@ th {
     background-color: #f2f2f2;
 }
 
-
-/* =====================================================
-  MEDIA QUERY (TÄMÄ ON TÄRKEIN OSA)
-  Nämä säännöt otetaan käyttöön VAIN, kun näyttö 
-  on 600px leveä TAI KAPEAMPI (eli useimmat puhelimet).
-=====================================================
-*/
-@media (max-width: 600px) {
-
-    body {
-        font-size: 16px; /* Helpottaa lukemista mobiilissa */
-    }
-
-    /* Pakotetaan sisältö reunoihin asti mobiilissa */
-    .login-container, main {
-        width: 100%;
-        margin: 0;
-        border-radius: 0;
-        box-shadow: none;
-        border: none;
-    }
-
-    button {
-        /* Varmistetaan, että napit ovat helposti painettavissa */
-        padding: 15px;
-    }
-
-    /* Mobiilissa taulukot ovat ongelma. Tämä yksinkertainen temppu
-       pakottaa taulukon rullaamaan sivuttain, jos se ei mahdu.
-       Se ei ole täydellinen, mutta estää sivua rikkoutumasta.
-    */
-    #report-container {
-        overflow-x: auto;
-    }
+/* --- Välilehtien painikerivi --- */
+.tab-nav {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 15px;
+    border-bottom: 2px solid #ccc;
+    padding-bottom: 5px;
 }
+
+/* Yksittäinen välilehtipainike */
+.tab-button {
+    background: none;
+    border: none;
+    padding: 10px 15px;
+    cursor: pointer;
+    font-size: 1rem;
+    color: #666;
+    transition: all 0.3s ease;
+    width: auto; /* Ylikirjoitetaan globaali button width: 100% */
+}
+
+.tab-button:hover {
+    color: #000;
+}
+
+/* Aktiivinen välilehti korostetaan */
+.tab-button.active {
+    font-weight: bold;
+    color: #0056b3;
+    border-bottom: 3px solid #0056b3;
+}
+
+/* Tyylit päivämäärä-spaneille koodin selkeyttämiseksi */
+.date-span {
+    font-size: 0.9em; 
+    color: #555; 
+    margin-left: 10px;
+}
+
 /* --- MODAL (POPUP) TYYLIT --- */
 .modal {
     display: none; /* Oletuksena piilossa */
@@ -178,4 +214,47 @@ th {
 }
 .status-icon {
     margin-right: 10px;
+}
+
+/* =====================================================
+  MEDIA QUERY (TÄMÄ ON TÄRKEIN OSA MOBIILILLE)
+  Nämä säännöt otetaan käyttöön VAIN, kun näyttö 
+  on 600px leveä TAI KAPEAMPI (eli useimmat puhelimet).
+=====================================================
+*/
+@media (max-width: 600px) {
+
+    body {
+        font-size: 16px; /* Helpottaa lukemista mobiilissa */
+    }
+
+    /* Kirjautumissivu pysyy keskitettynä, mutta vie enemmän leveyttä */
+    .login-container {
+        width: 90%;
+        padding: 20px;
+    }
+
+    /* Pakotetaan App/Manager-sisältö reunoihin asti mobiilissa */
+    main {
+        width: 100%;
+        margin: 0;
+        border-radius: 0;
+        box-shadow: none;
+        border: none;
+    }
+
+    button {
+        /* Varmistetaan, että napit ovat helposti painettavissa */
+        padding: 15px;
+    }
+
+    /* Rullattava taulukko mobiilissa */
+    #report-container {
+        overflow-x: auto;
+    }
+
+    /* Välilehtien asettelu mobiilissa (estetään menemästä yli reunojen) */
+    .tab-nav {
+        flex-wrap: wrap; 
+    }
 }

@@ -264,3 +264,32 @@ logoutButton.addEventListener('click', () => {
         window.location.href = 'index.html';
     });
 });
+// Odotetaan, että DOM on varmasti ladattu
+document.addEventListener('DOMContentLoaded', () => {
+    
+    // Haetaan kaikki välilehtipainikkeet
+    const tabButtons = document.querySelectorAll('.tab-button');
+
+    tabButtons.forEach(button => {
+        button.addEventListener('click', () => {
+            // 1. Haetaan painikkeen ylätaso (esim. section-hautaus), jotta logiikka toimii vain kyseisessä osiossa
+            const parentSection = button.closest('.module');
+            
+            // 2. Poistetaan "active"-luokka kaikilta tämän osion painikkeilta ja sisällöiltä
+            parentSection.querySelectorAll('.tab-button').forEach(btn => btn.classList.remove('active'));
+            parentSection.querySelectorAll('.tab-content').forEach(content => {
+                content.classList.remove('active');
+                content.style.display = 'none'; // Piilotetaan sisältö
+            });
+
+            // 3. Lisätään "active"-luokka klikattuun painikkeeseen
+            button.classList.add('active');
+
+            // 4. Näytetään oikea sisältö-div data-tab -attribuutin perusteella
+            const targetId = button.getAttribute('data-tab');
+            const targetContent = document.getElementById(targetId);
+            targetContent.classList.add('active');
+            targetContent.style.display = 'block'; // Näytetään sisältö
+        });
+    });
+});
