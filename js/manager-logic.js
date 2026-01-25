@@ -83,7 +83,7 @@ auth.onAuthStateChanged(async (user) => {
     }
 });
 
-// --- 2. RAPORTTIEN LATAUS ---
+// --- 2. RAPORTTIEN LATAUS (PÄIVITETTY) ---
 
 async function loadAllEmployeeProgress() {
     if (!reportContainer) return;
@@ -98,17 +98,25 @@ async function loadAllEmployeeProgress() {
 
         let query = db.collection('userProgress');
 
-        // Suodatetaan osaston mukaan (Super Admin näkee kaikki)
+        // MÄÄRITELMÄ: Mitä osastoja kukin esimies saa nähdä
+        const visibilityMap = {
+            'Suntio': ['Suntio', 'Suntiotyö', 'Haat'], // Suntioiden esimies näkee nämä
+            'Hautaustoimi': ['Hautaustoimi', 'Kausityö'], // Hautaustoimen esimies näkee nämä
+            'Toimisto': ['Toimisto', 'Lapsiperhe'] // Toimistopäällikkö näkee nämä
+        };
+
         if (isSuperAdmin) {
             console.log("Super Admin - ladataan kaikki.");
         } else if (managedDept) {
             console.log(`Osastoesimies (${managedDept})`);
-            query = query.where('department', '==', managedDept);
+            
+            // Haetaan kartasta ne osastot, jotka tämä esimies saa nähdä.
+            // Jos mäppäystä ei löydy, käytetään fallbackina pelkkää esimiehen omaa osastoa.
+            const allowedDepartments = visibilityMap[managedDept] || [managedDept];
+            
+            // KÄYTETÄÄN 'in' -operaattoria, jotta voidaan hakea useaa osastoa kerralla
+            query = query.where('department', 'in', allowedDepartments);
         }
-
-        // HUOM: Emme käytä Firestoren "employmentEnded != true" suodatusta tässä,
-        // koska se piilottaisi käyttäjät, joilla kenttää ei vielä ole.
-        // Teemme suodatuksen JavaScriptissä alla.
 
         const snapshot = await query.get();
 
@@ -131,7 +139,8 @@ async function loadAllEmployeeProgress() {
                         <th>Suntiotyö %</th>    
                         <th>Lapsiperhe %</th>   
                         <th>Häät %</th>
-                        <th style="background-color: #fce8e6;">Kausityö %</th> <th>Toiminnot</th>
+                        <th style="background-color: #fce8e6;">Kausityö %</th> 
+                        <th>Toiminnot</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -157,7 +166,7 @@ async function loadAllEmployeeProgress() {
             const suntiotyoProgress = calculateProgress(data.suntiotyo);
             const lapsiProgress = calculateProgress(data.lapsiperhe);
             const haatProgress = calculateProgress(data.haat); 
-            const kausityoProgress = calculateProgress(data.kausityo); // UUSI ROOLI
+            const kausityoProgress = calculateProgress(data.kausityo); 
 
             // Linkki yksilöraporttiin (HTML-sivu)
             const userLink = `<a href="employee-report.html?uid=${doc.id}" target="_blank">${data.userEmail || 'Tuntematon'}</a>`;
@@ -255,7 +264,7 @@ function openDetailModal(userName, data) {
         'suntiotyo': 'Suntiotyö',
         'lapsiperhe': 'Lapsi- ja perhetyö',
         'haat': 'Häät',
-        'kausityo': 'Kausityöntekijä' // UUSI
+        'kausityo': 'Kausityöntekijä' 
     };
 
     let contentFound = false;
@@ -298,9 +307,6 @@ function openDetailModal(userName, data) {
 
                 const icon = isDone ? '✅' : '❌';
                 const color = isDone ? 'green' : '#d9534f';
-                // Siistitään nimi: "task1" -> "Tehtävä 1" tai "kausityo-task1" -> "Kausityö-task1"
-                // Yksinkertainen tapa on näyttää ID, mutta käyttäjäystävällisempi olisi kääntää.
-                // Tässä näytetään puhdas avain hieman siistittynä.
                 const taskName = taskKey.replace(/task/i, 'Tehtävä ');
 
                 itemsHtml += `
