@@ -4,12 +4,10 @@ const auth = firebase.auth();
 const db = firebase.firestore();
 
 let currentUser; 
-
-const saveButton = document.getElementById('saveButton');
 const logoutButton = document.getElementById('logoutButton');
-const saveStatus = document.getElementById('saveStatus');
+const saveStatus = document.getElementById('saveStatus'); // Jos haluat näyttää "Tallennettu" -viestin
 
-// --- 1. AUTH LOGIIKKA ---
+// --- 1. AUTH JA ALUSTUS ---
 
 auth.onAuthStateChanged(async (user) => {
     if (user) {
@@ -18,18 +16,19 @@ auth.onAuthStateChanged(async (user) => {
 
         const idTokenResult = await user.getIdTokenResult(true); 
         const userRole = idTokenResult.claims.employeeRole; 
-
         console.log("Käyttäjän rooli:", userRole);
 
         // Näytä oikeat osiot
         showSectionsBasedOnRole(userRole);
 
-        // Lataa rastit
-        loadUserProgress(user.uid);
-
-        // TÄMÄ RIVI AIHEUTTI VIRHEEN, KOSKA FUNKTIO PUUTTUI. 
-        // NYT SE ON LISÄTTY TIEDOSTON LOPPUUN.
+        // Lataa jaetut dokumentit (PDF-linkit)
         loadSharedDocuments(); 
+
+        // Lataa käyttäjän rastit tietokannasta
+        await loadUserProgress(user.uid);
+
+        // Kun tiedot on ladattu, aktivoidaan kuuntelijat, jotta checkboxien klikkailu tallentuu
+        attachCheckboxListeners();
 
     } else {
         console.log("Ei käyttäjää, ohjataan kirjautumiseen.");
@@ -37,173 +36,38 @@ auth.onAuthStateChanged(async (user) => {
     }
 });
 
-// --- 2. LATAUSLOGIIKKA (RASTIT) ---
-
-async function loadUserProgress(uid) {
-    const docRef = db.collection('userProgress').doc(uid);
-
-    try {
-        const doc = await docRef.get();
-
-        if (doc.exists) {
-            const data = doc.data();
-            console.log("LADATUT TIEDOT:", data);
-
-            // 1. SUNTIO (Nyt kaikki 12 tehtävää)
-            // Käytetään silmukkaa tai listataan selkeyden vuoksi:
-            for (let i = 1; i <= 12; i++) {
-                updateTaskUI(`suntio-task${i}`, data.suntio?.[`task${i}`]);
-            }
-
-            // 2. TOIMISTO
-            updateTaskUI('toimisto-task1', data.toimisto?.task1);
-            updateTaskUI('toimisto-task2', data.toimisto?.task2);
-            // 3. HAUTAUSTOIMI
-            updateTaskUI('hautaus-task1', data.hautaus?.task1, 'hautaus-task1-date');      
-            // 6. LAPSI- JA PERHETYÖ
-            updateTaskUI('lapsi-task1', data.lapsiperhe?.task1, 'lapsi-task1-date');
-
-        } else {
-            console.log("Käyttäjälle ei löydy aiempia tietoja.");
-        }
-    } catch (error) {
-        console.error("Virhe tietoja ladatessa:", error);
-    }
-}
-
-function updateTaskUI(checkboxId, taskData, dateSpanId = null) {
-    const checkbox = document.getElementById(checkboxId);
-    if (!checkbox) return;
-
-    let isChecked = false;
-    let dateText = "";
-
-    if (typeof taskData === 'boolean') {
-        isChecked = taskData;
-    } else if (taskData && taskData.completed) {
-        isChecked = true;
-        if (taskData.date && dateSpanId) {
-            const dateObj = taskData.date.toDate();
-            const dateStr = dateObj.toLocaleString('fi-FI', { day: 'numeric', month: 'short', year: 'numeric' });
-            dateText = `(Kuitattu: ${dateStr})`;
-        }
-    }
-
-    checkbox.checked = isChecked;
-
-    if (dateSpanId) {
-        const dateElement = document.getElementById(dateSpanId);
-        if (dateElement) dateElement.textContent = dateText;
-    }
-}
-
-// --- 3. TALLENNUSLOGIIKKA ---
-
-async function saveProgress() {
-    if (!currentUser) return; 
-
-    saveStatus.textContent = "Tallennetaan...";
-    const now = firebase.firestore.Timestamp.now(); 
-
-    // Haetaan rooli
-    let myRole = 'Muu';
-    try {
-        const idTokenResult = await currentUser.getIdTokenResult();
-        if (idTokenResult.claims.employeeRole) {
-            myRole = idTokenResult.claims.employeeRole;
-        }
-    } catch (e) {
-        console.log("Roolin haku epäonnistui", e);
-    }
-
-    // Apufunktio: Hakee objektin { completed: boolean, date: Timestamp/null }
-    const getTaskObj = (id) => {
-        const el = document.getElementById(id);
-        const isChecked = el ? el.checked : false;
-        // Jos elementtiä ei löydy (HTML puuttuu), tulostetaan varoitus konsoliin
-        if (!el) console.warn(`Elementtiä ID:llä '${id}' ei löytynyt tallennuksessa!`);
-        
-        return {
-            completed: isChecked,
-            date: isChecked ? now : null
-        };
-    };
-
-    // Apufunktio: Hakee pelkän booleanin (Suntio/Toimisto vanha tyyli)
-    const getSimpleBool = (id) => {
-        const el = document.getElementById(id);
-        return el ? el.checked : false;
-    };
-
-    // Rakennetaan suntio-objekti dynaamisesti (task1 - task12)
-    let suntioTasks = {};
-    for (let i = 1; i <= 12; i++) {
-        suntioTasks[`task${i}`] = getSimpleBool(`suntio-task${i}`);
-    }
-
-    const progressData = {
-        userEmail: currentUser.email, 
-        department: myRole, 
-        
-        suntio: suntioTasks, // Sisältää nyt task1...task12
-
-        toimisto: {
-            task1: getSimpleBool('toimisto-task1'),
-            task2: getSimpleBool('toimisto-task2'),
-        },
-        hautaustoimi: {
-            task1: getTaskObj('hautaus-task1') // Huom: HTML ID oli hautaus-task1
-        },
-        lapsiperhe: {
-            task1: getTaskObj('lapsi-task1')
-        },
-        lastUpdated: now 
-    };
-
-    try {
-
-        await db.collection('userProgress').doc(currentUser.uid).set(progressData, { merge: true });
-        
-        saveStatus.textContent = "Edistyminen tallennettu!";
-        
-
-        loadUserProgress(currentUser.uid); 
-        
-        setTimeout(() => { saveStatus.textContent = ""; }, 3000);
-
-    } catch (error) {
-        console.error("Tallennusvirhe:", error);
-        saveStatus.textContent = "Tallennus epäonnistui.";
-    }
-}
-
-saveButton.addEventListener('click', saveProgress);
-
-// --- 4. NÄKYMÄN HALLINTA ---
+// --- 2. NÄKYMÄN HALLINTA (ROOLIT) ---
 
 function showSectionsBasedOnRole(role) {
-    const allSections = [
-        'section-suntio', 
-        'section-toimisto', 
-        'section-hautaus',  
-        'section-lapsiperhe'
-    ];
-    
-    allSections.forEach(id => {
-        const el = document.getElementById(id);
-        if (el) el.style.display = 'none';
+    // Piilotetaan ensin kaikki
+    const allSections = document.querySelectorAll('.module');
+    allSections.forEach(section => {
+        if (section.id !== 'section-shared-docs') { // Jaetut dokumentit näkyvät kaikille
+            section.style.display = 'none';
+        }
     });
 
-    if (role === 'Hautaus') {
+    // Näytetään rooliin perustuvat osiot
+    if (role === 'Hautaustoimi') {
         const el = document.getElementById('section-hautaus');
         if (el) el.style.display = 'block';
     } 
-    else if (role === 'Lapsi ja perhetyö') {
+    else if (role === 'Kausityö') {
+        const el = document.getElementById('section-kausityo');
+        if (el) el.style.display = 'block';
+    }
+    else if (role === 'Lapsiperhe' || role === 'Lapsi ja perhetyö') {
         const el = document.getElementById('section-lapsiperhe');
         if (el) el.style.display = 'block';
     }
     else if (role === 'Suntio') { 
-        const el = document.getElementById('section-suntio');
+        const el1 = document.getElementById('section-suntio');
+        const el2 = document.getElementById('section-haat');
+        if (el1) el1.style.display = 'block';
+        if (el2) el2.style.display = 'block';
+    }
+    else if (role === 'Suntiotyö') {
+        const el = document.getElementById('section-suntiotyo');
         if (el) el.style.display = 'block';
     }
     else if (role === 'Toimisto') {
@@ -212,14 +76,174 @@ function showSectionsBasedOnRole(role) {
     }
 }
 
-// --- 5. PUUTTUVAN FUNKTION LISÄYS: DOKUMENTTIEN LATAUS ---
+// --- 3. TIETOJEN LATAAMINEN FIRESTORESTA ---
+
+async function loadUserProgress(uid) {
+    try {
+        const docRef = db.collection('userProgress').doc(uid);
+        const doc = await docRef.get();
+
+        if (doc.exists) {
+            const data = doc.data();
+            console.log("LADATUT TIEDOT:", data);
+
+            // Käydään kaikki sivulla olevat checkboxit läpi
+            const checkboxes = document.querySelectorAll('input[type="checkbox"]');
+            
+            checkboxes.forEach(checkbox => {
+                const taskId = checkbox.id;
+                // Kategoria saadaan ID:stä. Esim. "hautaus-task1" -> "hautaus"
+                const category = taskId.split('-')[0]; 
+                
+                // Jos tietokannassa on tälle kategorialle ja tehtävälle dataa
+                if (data[category] && data[category][taskId]) {
+                    const taskInfo = data[category][taskId];
+                    const dateSpan = document.getElementById(`${taskId}-date`);
+                    
+                    // A) Jos tehtävä on tehty aiemmin (vanha boolean-tyyli tai uusi objekti)
+                    if (taskInfo === true || taskInfo.completed === true) {
+                        checkbox.checked = true;
+                        
+                        // Uusi tyyli: näytetään pvm
+                        if (dateSpan && taskInfo.date) {
+                            const dateObj = new Date(taskInfo.date.seconds * 1000);
+                            dateSpan.innerText = `(${dateObj.toLocaleDateString('fi-FI')} ${dateObj.toLocaleTimeString('fi-FI', {hour: '2-digit', minute:'2-digit'})})`;
+                            dateSpan.style.color = "#555";
+                        }
+                    } 
+                    // B) Jos tehtävä on peruttu ja sille on kirjoitettu syy
+                    else if (taskInfo.completed === false && taskInfo.removedReason) {
+                        checkbox.checked = false;
+                        if (dateSpan) {
+                            dateSpan.innerText = `(Peruttu: ${taskInfo.removedReason})`;
+                            dateSpan.style.color = "red";
+                        }
+                    }
+                }
+            });
+        }
+    } catch (error) {
+        console.error("Virhe tietoja ladatessa:", error);
+    }
+}
+
+// --- 4. CHECKBOXIEN KUUNTELIJA JA TALLENNUS (AUTOSAVE) ---
+
+function attachCheckboxListeners() {
+    const checkboxes = document.querySelectorAll('input[type="checkbox"]');
+
+    checkboxes.forEach(checkbox => {
+        checkbox.addEventListener('change', async (event) => {
+            const taskId = event.target.id;
+            const isChecked = event.target.checked;
+            
+            // Haetaan kategoria ID:stä (esim. "suntio-task1" -> "suntio")
+            const category = taskId.split('-')[0]; 
+            const dateSpan = document.getElementById(`${taskId}-date`);
+
+            if (isChecked) {
+                // --- TEHTÄVÄ SUORITETAAN ---
+                const now = new Date();
+                
+                if (dateSpan) {
+                    dateSpan.innerText = `(${now.toLocaleDateString('fi-FI')} ${now.toLocaleTimeString('fi-FI', {hour: '2-digit', minute:'2-digit'})})`;
+                    dateSpan.style.color = "#555";
+                }
+                
+                await saveTaskToDb(category, taskId, true, now, null);
+
+            } else {
+                // --- TEHTÄVÄ PERUUTETAAN ---
+                const reason = prompt("Miksi haluat perua tämän perehdytysmerkinnän?\nKirjoita syy tähän:");
+                
+                if (reason && reason.trim() !== "") {
+                    // Syy annettiin -> Sallitaan poisto
+                    if (dateSpan) {
+                        dateSpan.innerText = `(Peruttu: ${reason})`;
+                        dateSpan.style.color = "red";
+                    }
+                    await saveTaskToDb(category, taskId, false, new Date(), reason);
+                } else {
+                    // Ei syytä -> Estetään poisto
+                    alert("Kirjallinen syy on pakollinen. Merkintää ei poistettu.");
+                    event.target.checked = true; // Rasti takaisin
+                }
+            }
+        });
+    });
+}
+
+// Apufunktio yhden tehtävän tallentamiseen
+async function saveTaskToDb(category, taskId, isCompleted, dateObj, reasonText) {
+    if (!currentUser) return;
+    
+    if (saveStatus) saveStatus.textContent = "Tallennetaan...";
+
+    const userRef = db.collection('userProgress').doc(currentUser.uid);
+    
+    const taskData = {
+        completed: isCompleted,
+        date: firebase.firestore.Timestamp.fromDate(dateObj)
+    };
+    
+    if (reasonText) {
+        taskData.removedReason = reasonText;
+    }
+
+    try {
+        await userRef.set({
+            [category]: {
+                [taskId]: taskData
+            },
+            lastUpdated: firebase.firestore.Timestamp.now()
+        }, { merge: true }); // Tärkeää, ettei ylikirjoita muuta dataa
+        
+        if (saveStatus) {
+            saveStatus.textContent = "Edistyminen tallennettu!";
+            setTimeout(() => { saveStatus.textContent = ""; }, 2000);
+        }
+        
+    } catch (error) {
+        console.error("Virhe tallennuksessa:", error);
+        alert("Virhe tietojen tallennuksessa. Tarkista verkkoyhteys.");
+        if (saveStatus) saveStatus.textContent = "";
+    }
+}
+
+// --- 5. VÄLILEHTIEN (TABS) LOGIIKKA ---
+
+document.addEventListener('DOMContentLoaded', () => {
+    const tabButtons = document.querySelectorAll('.tab-button');
+
+    tabButtons.forEach(button => {
+        button.addEventListener('click', () => {
+            const parentSection = button.closest('.module');
+            
+            parentSection.querySelectorAll('.tab-button').forEach(btn => btn.classList.remove('active'));
+            parentSection.querySelectorAll('.tab-content').forEach(content => {
+                content.classList.remove('active');
+                content.style.display = 'none'; 
+            });
+
+            button.classList.add('active');
+
+            const targetId = button.getAttribute('data-tab');
+            const targetContent = document.getElementById(targetId);
+            if(targetContent) {
+                targetContent.classList.add('active');
+                targetContent.style.display = 'block'; 
+            }
+        });
+    });
+});
+
+// --- 6. JAETTUJEN DOKUMENTTIEN LATAUS ---
 
 async function loadSharedDocuments() {
     const listElement = document.getElementById('document-list');
-    if (!listElement) return; // Varmistus, jos elementtiä ei ole
+    if (!listElement) return; 
 
     try {
-        // Haetaan dokumentit, uusimmasta vanhimpaan
         const snapshot = await db.collection('sharedDocuments')
                                  .orderBy('uploadedAt', 'desc')
                                  .get();
@@ -229,17 +253,16 @@ async function loadSharedDocuments() {
             return;
         }
 
-        listElement.innerHTML = ''; // Tyhjennetään "Ladataan..."
+        listElement.innerHTML = ''; 
         
         snapshot.forEach(doc => {
             const data = doc.data();
-            
             const li = document.createElement('li');
             const a = document.createElement('a');
             
-            a.href = data.url;        // Latauslinkki
-            a.textContent = data.fileName; // Tiedoston nimi
-            a.target = '_blank';      // Avaa uuteen välilehteen
+            a.href = data.url;        
+            a.textContent = data.fileName; 
+            a.target = '_blank';      
             
             li.appendChild(a);
             listElement.appendChild(li);
@@ -247,49 +270,19 @@ async function loadSharedDocuments() {
 
     } catch (error) {
         console.error("Virhe jaettujen dokumenttien latauksessa:", error);
-        
-        // Jos tulee indeksi-virhe (koska orderBy), näytetään silti jotain
         if (error.message.includes('index')) {
             console.log("Huom: Saatat tarvita Firestore-indeksin 'sharedDocuments'-kokoelmalle (uploadedAt).");
         }
-        
         listElement.innerHTML = '<li>Dokumenttien lataus epäonnistui.</li>';
     }
 }
 
-// --- 6. ULOSKIRJAUTUMINEN ---
+// --- 7. ULOSKIRJAUTUMINEN ---
 
-logoutButton.addEventListener('click', () => {
-    auth.signOut().then(() => {
-        window.location.href = 'index.html';
-    });
-});
-// Odotetaan, että DOM on varmasti ladattu
-document.addEventListener('DOMContentLoaded', () => {
-    
-    // Haetaan kaikki välilehtipainikkeet
-    const tabButtons = document.querySelectorAll('.tab-button');
-
-    tabButtons.forEach(button => {
-        button.addEventListener('click', () => {
-            // 1. Haetaan painikkeen ylätaso (esim. section-hautaus), jotta logiikka toimii vain kyseisessä osiossa
-            const parentSection = button.closest('.module');
-            
-            // 2. Poistetaan "active"-luokka kaikilta tämän osion painikkeilta ja sisällöiltä
-            parentSection.querySelectorAll('.tab-button').forEach(btn => btn.classList.remove('active'));
-            parentSection.querySelectorAll('.tab-content').forEach(content => {
-                content.classList.remove('active');
-                content.style.display = 'none'; // Piilotetaan sisältö
-            });
-
-            // 3. Lisätään "active"-luokka klikattuun painikkeeseen
-            button.classList.add('active');
-
-            // 4. Näytetään oikea sisältö-div data-tab -attribuutin perusteella
-            const targetId = button.getAttribute('data-tab');
-            const targetContent = document.getElementById(targetId);
-            targetContent.classList.add('active');
-            targetContent.style.display = 'block'; // Näytetään sisältö
+if(logoutButton) {
+    logoutButton.addEventListener('click', () => {
+        auth.signOut().then(() => {
+            window.location.href = 'index.html';
         });
     });
-});
+}

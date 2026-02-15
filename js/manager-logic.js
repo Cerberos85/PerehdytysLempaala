@@ -4,12 +4,20 @@ const auth = firebase.auth();
 const db = firebase.firestore();
 const storage = firebase.storage();
 
-// DOM-elementit
+// --- DOM-ELEMENTIT ---
 const reportContainer = document.getElementById('report-container');
 const logoutButton = document.getElementById('logoutButton');
 const fileUploadInput = document.getElementById('fileUploadInput');
 const fileUploadButton = document.getElementById('fileUploadButton');
 const uploadStatus = document.getElementById('uploadStatus');
+
+// UUSI: Etsitään valintaruutu (Näytä päättyneet)
+const showEndedCheckbox = document.getElementById('showEndedContracts');
+if (showEndedCheckbox) {
+    showEndedCheckbox.addEventListener('change', () => {
+        loadAllEmployeeProgress(); // Ladataan taulukko uudelleen kun ruksi laitetaan päälle/pois
+    });
+}
 
 // Modal-elementit (Tarkasteluikkuna)
 const modal = document.getElementById("detailModal");
@@ -44,22 +52,30 @@ auth.onAuthStateChanged(async (user) => {
                 // 3. Aktivoidaan raporttitaulukon napit (Delegointi)
                 if (reportContainer) {
                     reportContainer.addEventListener('click', (event) => {
+                        
                         // A) Työsuhteen päättäminen
                         if (event.target.classList.contains('end-contract-btn')) {
                             const userId = event.target.dataset.userid;
                             const userName = event.target.closest('tr').cells[0].textContent.trim();
-                
-                            if (confirm(`Haluatko varmasti merkitä käyttäjän ${userName} työsuhteen päättyneeksi?`)) {
+                            if (confirm(`Haluatko varmasti merkitä käyttäjän ${userName} työsuhteen päättyneeksi?\nTiedot poistuvat tietokannasta automaattisesti 2 vuoden kuluttua.`)) {
                                 markEmploymentEnded(userId);
                             }
                         }
                         
-                        // B) Tarkastelu (Modal)
+                        // B) Työsuhteen palauttaminen (UUSI)
+                        if (event.target.classList.contains('restore-contract-btn')) {
+                            const userId = event.target.dataset.userid;
+                            const userName = event.target.closest('tr').cells[0].textContent.trim();
+                            if (confirm(`Haluatko palauttaa käyttäjän ${userName} työsuhteen voimaan?`)) {
+                                restoreEmployment(userId);
+                            }
+                        }
+
+                        // C) Tarkastelu (Modal)
                         if (event.target.classList.contains('view-details-btn')) {
                             const rawData = event.target.getAttribute('data-entry');
                             const userName = event.target.getAttribute('data-name');
                             
-                            // Puretaan JSON-data takaisin objektiksi
                             try {
                                 const data = JSON.parse(decodeURIComponent(rawData));
                                 openDetailModal(userName, data);
@@ -83,7 +99,7 @@ auth.onAuthStateChanged(async (user) => {
     }
 });
 
-// --- 2. RAPORTTIEN LATAUS (PÄIVITETTY) ---
+// --- 2. RAPORTTIEN LATAUS ---
 
 async function loadAllEmployeeProgress() {
     if (!reportContainer) return;
@@ -100,21 +116,15 @@ async function loadAllEmployeeProgress() {
 
         // MÄÄRITELMÄ: Mitä osastoja kukin esimies saa nähdä
         const visibilityMap = {
-            'Suntio': ['Suntio', 'Suntiotyö', 'Haat'], // Suntioiden esimies näkee nämä
-            'Hautaustoimi': ['Hautaustoimi', 'Kausityö'], // Hautaustoimen esimies näkee nämä
-            'Toimisto': ['Toimisto', 'Lapsiperhe'] // Toimistopäällikkö näkee nämä
+            'Suntio': ['Suntio', 'Suntiotyö', 'Haat'],
+            'Hautaustoimi': ['Hautaustoimi', 'Kausityö'],
+            'Toimisto': ['Toimisto', 'Lapsiperhe']
         };
 
         if (isSuperAdmin) {
             console.log("Super Admin - ladataan kaikki.");
         } else if (managedDept) {
-            console.log(`Osastoesimies (${managedDept})`);
-            
-            // Haetaan kartasta ne osastot, jotka tämä esimies saa nähdä.
-            // Jos mäppäystä ei löydy, käytetään fallbackina pelkkää esimiehen omaa osastoa.
             const allowedDepartments = visibilityMap[managedDept] || [managedDept];
-            
-            // KÄYTETÄÄN 'in' -operaattoria, jotta voidaan hakea useaa osastoa kerralla
             query = query.where('department', 'in', allowedDepartments);
         }
 
@@ -125,7 +135,6 @@ async function loadAllEmployeeProgress() {
             return;
         }
         
-        // Luodaan taulukko
         let html = `
             <div style="overflow-x: auto;"> 
             <table class="report-table">
@@ -150,13 +159,15 @@ async function loadAllEmployeeProgress() {
 
         snapshot.forEach(doc => {
             const data = doc.data();
+            const isEnded = data.employmentEnded === true;
 
-            // --- SUODATUS: Piilotetaan päättyneet työsuhteet ---
-            if (data.employmentEnded === true) {
-                return; // Hypätään yli (continue)
+            // --- SUODATUS: Tarkistetaan näytetäänkö päättyneet ---
+            const showEnded = showEndedCheckbox ? showEndedCheckbox.checked : false;
+            if (isEnded && !showEnded) {
+                return; // Piilotetaan, jos checkbox ei ole valittuna
             }
+
             visibleRows++;
-            
             const userRole = data.department || '-';
 
             // Lasketaan prosentit dynaamisesti
@@ -168,17 +179,24 @@ async function loadAllEmployeeProgress() {
             const haatProgress = calculateProgress(data.haat); 
             const kausityoProgress = calculateProgress(data.kausityo); 
 
-            // Linkki yksilöraporttiin (HTML-sivu)
-            const userLink = `<a href="employee-report.html?uid=${doc.id}" target="_blank">${data.userEmail || 'Tuntematon'}</a>`;
-            const roleStyle = userRole === '-' ? 'color: red; font-weight: bold;' : '';
+            // Visuaaliset tyylit päättyneille työsuhteille
+            const rowStyle = isEnded ? 'background-color: #f5f5f5; color: #888; font-style: italic;' : '';
+            const roleText = isEnded ? `${userRole} <br><small style="color:red;">(Päättynyt)</small>` : userRole;
 
-            // Pakataan data turvallisesti napin attribuuttiin modaalia varten
+            // Linkki yksilöraporttiin
+            const userLink = `<a href="employee-report.html?uid=${doc.id}" target="_blank" style="${isEnded ? 'color:#888;' : ''}">${data.userEmail || 'Tuntematon'}</a>`;
+
+            // Päätetään kumpi nappi näytetään (Päätä vai Palauta)
+            const actionButton = isEnded 
+                ? `<button class="restore-contract-btn" data-userid="${doc.id}" style="background-color: #28a745; margin-top: 5px;">🔄 Palauta</button>`
+                : `<button class="end-contract-btn" data-userid="${doc.id}" style="background-color: #dc3545; margin-top: 5px;">❌ Päätä</button>`;
+
             const safeData = encodeURIComponent(JSON.stringify(data));
 
             html += `
-                <tr>
+                <tr style="${rowStyle}">
                     <td>${userLink}</td>
-                    <td style="${roleStyle}">${userRole}</td> 
+                    <td>${roleText}</td> 
                     <td>${suntioProgress}%</td>
                     <td>${toimistoProgress}%</td>
                     <td>${hautausProgress}%</td>     
@@ -187,11 +205,8 @@ async function loadAllEmployeeProgress() {
                     <td>${haatProgress}%</td>
                     <td>${kausityoProgress}%</td>
                     <td>
-                        <button class="view-details-btn" data-entry="${safeData}" data-name="${data.userEmail}">
-                            👁️ Tarkastele
-                        </button>
-
-                        <button class="end-contract-btn" data-userid="${doc.id}">Päätä työsuhde</button>
+                        <button class="view-details-btn" data-entry="${safeData}" data-name="${data.userEmail}">👁️ Tarkastele</button>
+                        ${actionButton}
                     </td>
                 </tr>
             `;
@@ -216,13 +231,12 @@ async function loadAllEmployeeProgress() {
 function calculateProgress(categoryData) {
     if (!categoryData) return 0;
     
-    // Muutetaan objekti arvojen taulukoksi
     const tasks = Object.values(categoryData);
     if (tasks.length === 0) return 0;
 
     let completedCount = 0;
     tasks.forEach(task => {
-        // Tuetaan boolean-arvoja (true) ja objekteja {completed: true}
+        // Lasketaan vain aidosti valmiit (ei peruttuja)
         if (task === true || (typeof task === 'object' && task !== null && task.completed === true)) {
             completedCount++;
         }
@@ -233,14 +247,12 @@ function calculateProgress(categoryData) {
 
 // --- 4. MODAL LOGIIKKA (POPUP) ---
 
-// Sulje kun ruksista painetaan
 if (closeModalBtn) {
     closeModalBtn.onclick = function() {
         modal.style.display = "none";
     }
 }
 
-// Sulje kun klikataan ohi ikkunan
 window.onclick = function(event) {
     if (event.target == modal) {
         modal.style.display = "none";
@@ -254,9 +266,8 @@ function openDetailModal(userName, data) {
     if(!modalTitle || !modalBody) return;
 
     modalTitle.textContent = `Perehdytys: ${userName}`;
-    modalBody.innerHTML = ''; // Tyhjennä vanhat
+    modalBody.innerHTML = ''; 
 
-    // Määritellään kategoriat ja niiden otsikot
     const categories = {
         'suntio': 'Suntion tehtävät',
         'toimisto': 'Toimisto',
@@ -269,9 +280,7 @@ function openDetailModal(userName, data) {
 
     let contentFound = false;
 
-    // Käydään kategoriat läpi
     for (const [key, title] of Object.entries(categories)) {
-        // Tietokannassa voi olla 'hautaustoimi' tai 'hautaus', tarkistetaan molemmat
         let categoryData = data[key];
         if (!categoryData && key === 'hautaustoimi') categoryData = data['hautaus'];
 
@@ -282,9 +291,7 @@ function openDetailModal(userName, data) {
             
             let itemsHtml = `<h3>${title}</h3>`;
             
-            // Lajitellaan tehtävät nimen mukaan (task1, task2...)
             const sortedKeys = Object.keys(categoryData).sort((a, b) => {
-                // Yritetään järjestää numeron mukaan jos mahdollista
                 const numA = parseInt(a.replace(/^\D+/g, '')) || 0;
                 const numB = parseInt(b.replace(/^\D+/g, '')) || 0;
                 return numA - numB;
@@ -294,25 +301,31 @@ function openDetailModal(userName, data) {
                 const taskVal = categoryData[taskKey];
                 let isDone = false;
                 let dateStr = '';
+                let reasonStr = '';
 
+                // UUSI LOGIIKKA: Käsitellään myös peruutussyyt
                 if (typeof taskVal === 'boolean') {
                     isDone = taskVal;
                 } else if (taskVal && typeof taskVal === 'object') {
                     isDone = taskVal.completed;
                     if (isDone && taskVal.date) {
                         const dateObj = new Date(taskVal.date.seconds * 1000); 
-                        dateStr = ` <small>(${dateObj.toLocaleDateString('fi-FI')})</small>`;
+                        dateStr = ` <small style="color:#666;">(${dateObj.toLocaleDateString('fi-FI')} ${dateObj.toLocaleTimeString('fi-FI', {hour: '2-digit', minute:'2-digit'})})</small>`;
+                    } else if (!isDone && taskVal.removedReason) {
+                        reasonStr = ` <br><small style="color:red; margin-left: 25px;">Syy peruutukseen: "${taskVal.removedReason}"</small>`;
                     }
                 }
 
-                const icon = isDone ? '✅' : '❌';
-                const color = isDone ? 'green' : '#d9534f';
+                // Jos peruttu, näytetään huutomerkki tai vastaava ikoni
+                const icon = isDone ? '✅' : (reasonStr ? '⚠️' : '❌');
+                const color = isDone ? 'green' : (reasonStr ? '#d9534f' : '#d9534f');
                 const taskName = taskKey.replace(/task/i, 'Tehtävä ');
 
                 itemsHtml += `
-                    <div class="detail-item" style="border-bottom: 1px solid #f0f0f0; padding: 4px 0;">
+                    <div class="detail-item" style="border-bottom: 1px solid #f0f0f0; padding: 6px 0;">
                         <span class="status-icon">${icon}</span> 
                         <span style="color:${color}; font-weight:500;">${taskName}</span> ${dateStr}
+                        ${reasonStr}
                     </div>
                 `;
             });
@@ -329,7 +342,51 @@ function openDetailModal(userName, data) {
     modal.style.display = "block";
 }
 
-// --- 5. TIEDOSTOJEN LATAUS (STORAGE) ---
+// --- 5. TYÖSUHTEEN PÄÄTTÄMINEN (TTL 2 VUOTTA) ---
+
+async function markEmploymentEnded(userId) {
+    try {
+        const now = new Date();
+        const twoYearsFromNow = new Date();
+        twoYearsFromNow.setFullYear(now.getFullYear() + 2);
+
+        await db.collection('userProgress').doc(userId).set({
+            employmentEnded: true,
+            employmentEndDate: firebase.firestore.Timestamp.fromDate(now),
+            expireAt: firebase.firestore.Timestamp.fromDate(twoYearsFromNow) // TTL-kenttä
+        }, { merge: true }); 
+        
+        alert("Työsuhde merkitty päättyneeksi. Tiedot piilotetaan raportista ja ne poistuvat tietokannasta automaattisesti 2 vuoden kuluttua.");
+        loadAllEmployeeProgress(); // Päivitä lista
+        
+    } catch (error) {
+        console.error("Virhe:", error);
+        alert("Virhe toiminnossa: " + error.message);
+    }
+}
+
+// --- 6. TYÖSUHTEEN PALAUTTAMINEN (UUSI) ---
+
+async function restoreEmployment(userId) {
+    try {
+        await db.collection('userProgress').doc(userId).update({
+            employmentEnded: false,
+            employmentEndDate: firebase.firestore.FieldValue.delete(), // Poistetaan päättymispvm
+            expireAt: firebase.firestore.FieldValue.delete()           // Poistetaan 2 vuoden tuhoutumisajastin
+        });
+        
+        alert("Työsuhde on palautettu voimaan! Työntekijä voi jälleen kirjautua normaalisti.");
+        
+        // Päivitä lista (piilottaa sen, jos "Näytä päättyneet" ei ole valittuna)
+        loadAllEmployeeProgress(); 
+
+    } catch (error) {
+        console.error("Virhe palautuksessa:", error);
+        alert("Virhe toiminnossa: " + error.message);
+    }
+}
+
+// --- 7. TIEDOSTOJEN LATAUS (STORAGE) ---
 
 async function uploadSharedDocument(file) {
     if (!uploadStatus) return;
@@ -358,24 +415,7 @@ async function uploadSharedDocument(file) {
     }
 }
 
-// --- 6. TYÖSUHTEEN PÄÄTTÄMINEN ---
-
-async function markEmploymentEnded(userId) {
-    try {
-        await db.collection('userProgress').doc(userId).set({
-            employmentEnded: true,
-            employmentEndDate: firebase.firestore.Timestamp.now()
-        }, { merge: true }); // Merge true varmistaa ettei muu data katoa
-        
-        alert("Työsuhde merkitty päättyneeksi.");
-        loadAllEmployeeProgress(); // Päivitä lista
-    } catch (error) {
-        console.error("Virhe:", error);
-        alert("Virhe toiminnossa.");
-    }
-}
-
-// --- 7. ULOSKIRJAUTUMINEN ---
+// --- 8. ULOSKIRJAUTUMINEN ---
 
 if (logoutButton) {
     logoutButton.addEventListener('click', () => {

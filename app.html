@@ -22,377 +22,318 @@
             <div>
                 <input type="checkbox" id="suntio-task1">
                 <label for="suntio-task1">Tehtävä A (esim. hälytysjärjestelmät)</label>
+                <span id="suntio-task1-date" class="date-span"></span>
             </div>
             <div>
                 <input type="checkbox" id="suntio-task2">
                 <label for="suntio-task2">Tehtävä B (esim. siivousvälineet)</label>
+                <span id="suntio-task2-date" class="date-span"></span>
             </div>
                <div>
                 <input type="checkbox" id="suntio-task3">
                 <label for="suntio-task3">Tehtävä A (esim. hälytysjärjestelmät)</label>
+                <span id="suntio-task3-date" class="date-span"></span>
             </div>
             <div>
                 <input type="checkbox" id="suntio-task4">
                 <label for="suntio-task4">Tehtävä B (esim. siivousvälineet)</label>
+                <span id="suntio-task4-date" class="date-span"></span>
             </div>
             <h3>Hautausmaa</h3>
               <div>
                 <input type="checkbox" id="suntio-task5">
-                <label for="suntio-task1">Hautausmaat ja hautaosastot</label>
+                <label for="suntio-task5">Hautausmaat ja hautaosastot</label>
+                <span id="suntio-task5-date" class="date-span"></span>
             </div>
             <div>
                 <input type="checkbox" id="suntio-task6">
-                <label for="suntio-task2">Kirkkohautausmaa Osastot/Pienoismuistolehto</label>
+                <label for="suntio-task6">Kirkkohautausmaa Osastot/Pienoismuistolehto</label>
+                <span id="suntio-task6-date" class="date-span"></span>
             </div>
                <div>
                 <input type="checkbox" id="suntio-task7">
-                <label for="suntio-task3">Ristimäen hautausmaa</label>
+                <label for="suntio-task7">Ristimäen hautausmaa</label>
+                <span id="suntio-task7-date" class="date-span"></span>
             </div>
             <div>
                 <input type="checkbox" id="suntio-task8">
-                <label for="suntio-task4">Hautapaikat ja hautapaikkamerkinnät</label>
+                <label for="suntio-task8">Hautapaikat ja hautapaikkamerkinnät</label>
+                <span id="suntio-task8-date" class="date-span"></span>
             </div>
                 <div>
                 <input type="checkbox" id="suntio-task9">
-                <label for="suntio-task1">Haudoilla tehdyt valmistelutyöt</label>
+                <label for="suntio-task9">Haudoilla tehdyt valmistelutyöt</label>
+                <span id="suntio-task9-date" class="date-span"></span>
             </div>
             <div>
                 <input type="checkbox" id="suntio-task10">
-                <label for="suntio-task2">Haudoilla tehtävät jälkityöt</label>
+                <label for="suntio-task10">Haudoilla tehtävät jälkityöt</label>
+                <span id="suntio-task10-date" class="date-span"></span>
             </div>
                <div>
                 <input type="checkbox" id="suntio-task11">
-                <label for="suntio-task3">Katriina hautapaikka merkinnät</label>
+                <label for="suntio-task11">Katriina hautapaikka merkinnät</label>
+                <span id="suntio-task11-date" class="date-span"></span>
             </div>
             <div>
                 <input type="checkbox" id="suntio-task12">
-                <label for="suntio-task4">Hautaaminen Oikeudet ja velvollisuudet</label>
+                <label for="suntio-task12">Hautaaminen Oikeudet ja velvollisuudet</label>
+                <span id="suntio-task12-date" class="date-span"></span>
             </div>
         </section>
+
         <section class="module" id="section-toimisto" style="display:none;">
             <h3>Toimistotyön tehtävät</h3>
             <div>
                 <input type="checkbox" id="toimisto-task1">
                 <label for="toimisto-task1">Puhelinvaihde</label>
+                <span id="toimisto-task1-date" class="date-span"></span>
             </div>
             <div>
                 <input type="checkbox" id="toimisto-task2">
                 <label for="toimisto-task2">Ohjelmistojen käyttö</label>
+                <span id="toimisto-task2-date" class="date-span"></span>
             </div>
         </section>
 
-<section class="module" id="section-hautaus" style="display:none;">
-    <h3>Hautaustoimen tehtävät</h3>
+        <section class="module" id="section-hautaus" style="display:none;">
+            <h3>Hautaustoimen tehtävät</h3>
 
-    <nav class="tab-nav">
-        <button class="tab-button active" data-tab="hautaus-yleis">Yleisperehdytys</button>
-        <button class="tab-button" data-tab="hautaus-kevat">Hautausmaan kevät-, kesä- ja syyshoito</button>
-        <button class="tab-button" data-tab="hautaus-koneet">Hautausmaan työkoneet</button>
-    </nav>
+            <nav class="tab-nav">
+                <button class="tab-button active" data-tab="hautaus-yleis">Yleisperehdytys</button>
+                <button class="tab-button" data-tab="hautaus-kevat">Hautausmaan kevät-, kesä- ja syyshoito</button>
+                <button class="tab-button" data-tab="hautaus-koneet">Hautausmaan työkoneet</button>
+            </nav>
 
-    <div class="tab-content active" id="hautaus-yleis">
-        <h4>Yleiset ohjeet ja tilat</h4>
-        <div>
-            <input type="checkbox" id="hautaus-task1">
-            <label for="hautaus-task1">Sosiaalitilojen ja työtilojen sijainti ja kunnossapito</label>
-            <span id="hautaus-task1-date" class="date-span"></span>
-        </div>
-        <div>
-            <input type="checkbox" id="hautaus-task2">
-            <label for="hautaus-task2">Tuntilistojen täyttäminen</label>
-            <span id="hautaus-task2-date" class="date-span"></span>
-        </div>
-        <div>
-            <input type="checkbox" id="hautaus-task3">
-            <label for="hautaus-task3">Tauot työpäivän aikana</label>
-            <span id="hautaus-task3-date" class="date-span"></span>
-        </div>
-        <div>
-            <input type="checkbox" id="hautaus-task4">
-            <label for="hautaus-task4">Matkapuhelimen käyttö työaikana</label>
-            <span id="hautaus-task4-date" class="date-span"></span>
-        </div>
-        <div>
-            <input type="checkbox" id="hautaus-task6">
-            <label for="hautaus-task6">Lomapäivät, vapaat ja poissaolot</label>
-            <span id="hautaus-task6-date" class="date-span"></span>
-        </div>
-        <div>
-            <input type="checkbox" id="hautaus-task7">
-            <label for="hautaus-task7">Sairastuminen ja tapaturmat</label>
-            <span id="hautaus-task7-date" class="date-span"></span>
-        </div>
-        <div>
-            <input type="checkbox" id="hautaus-task14">
-            <label for="hautaus-task14">Palkanmaksu</label>
-            <span id="hautaus-task14-date" class="date-span"></span>
-        </div>
-        <div>
-            <input type="checkbox" id="hautaus-task5">
-            <label for="hautaus-task5">Työn sisäisten ajojen tekeminen</label>
-            <span id="hautaus-task5-date" class="date-span"></span>
-        </div>
-        <div>
-            <input type="checkbox" id="hautaus-task10">
-            <label for="hautaus-task10">Vikatilanteet hautausmaalla ja kiinteistössä</label>
-            <span id="hautaus-task10-date" class="date-span"></span>
-        </div>
-        <div>
-            <input type="checkbox" id="hautaus-task12">
-            <label for="hautaus-task12">Työturvallisuus ja hätätilanteet</label>
-            <span id="hautaus-task12-date" class="date-span"></span>
-        </div>
-        <div>
-            <input type="checkbox" id="hautaus-task8">
-            <label for="hautaus-task8">Työnantajan direktio-oikeus ja salassapitovelvollisuus</label>
-            <span id="hautaus-task8-date" class="date-span"></span>
-        </div>
-        <div>
-            <input type="checkbox" id="hautaus-task9">
-            <label for="hautaus-task9">Vastuu työtehtävistä</label>
-            <span id="hautaus-task9-date" class="date-span"></span>
-        </div>
-        <div>
-            <input type="checkbox" id="hautaus-task11">
-            <label for="hautaus-task11">Asiakaspalvelu ja käyttäytyminen työntekijöiden kanssa</label>
-            <span id="hautaus-task11-date" class="date-span"></span>
-        </div>
-        <div>
-            <input type="checkbox" id="hautaus-task13">
-            <label for="hautaus-task13">Työtehtävät, työskentelyalueet ja muutokset työpisteissä</label>
-            <span id="hautaus-task13-date" class="date-span"></span>
-        </div>
-        </div>
-    <div class="tab-content" id="hautaus-kevat" style="display:none;">
-        <h4>Hautausmaan kevät-, kesä- ja syyshoito</h4>
-        <div>
-            <input type="checkbox" id="hautaus-task14">
-            <label for="hautaus-task14">Työtehtävät haudoilla keväällä ja syksyllä</label>
-            <span id="hautaus-task13-date" class="date-span"></span>
-        </div>
+            <div class="tab-content active" id="hautaus-yleis">
+                <h4>Yleiset ohjeet ja tilat</h4>
                 <div>
-            <input type="checkbox" id="hautaus-task15">
-            <label for="hautaus-task15">Puutarhajätteen ja muiden jätteiden sijoituspaikka </label>
-            <span id="hautaus-task15-date" class="date-span"></span>
-        </div>
+                    <input type="checkbox" id="hautaus-task1">
+                    <label for="hautaus-task1">Sosiaalitilojen ja työtilojen sijainti ja kunnossapito</label>
+                    <span id="hautaus-task1-date" class="date-span"></span>
+                </div>
                 <div>
-            <input type="checkbox" id="hautaus-task16">
-            <label for="hautaus-task16">Kynttilöiden poistaminen haudoilta</label>
-            <span id="hautaus-task16-date" class="date-span"></span>
-        </div>
+                    <input type="checkbox" id="hautaus-task2">
+                    <label for="hautaus-task2">Tuntilistojen täyttäminen</label>
+                    <span id="hautaus-task2-date" class="date-span"></span>
+                </div>
                 <div>
-            <input type="checkbox" id="hautaus-task17">
-            <label for="hautaus-task17">Lehtien poistaminen hauta-alueilta ja hautapaikoilta ja tähän käytettävät työvälineet </label>
-            <span id="hautaus-task17-date" class="date-span"></span>
-        </div>
+                    <input type="checkbox" id="hautaus-task3">
+                    <label for="hautaus-task3">Tauot työpäivän aikana</label>
+                    <span id="hautaus-task3-date" class="date-span"></span>
+                </div>
                 <div>
-            <input type="checkbox" id="hautaus-task18">
-            <label for="hautaus-task18">Kynttilöiden, lyhtyjen ja puutarhatarvikkeiden siirto tai poisto hautapaikalta</label>
-            <span id="hautaus-task18-date" class="date-span"></span>
-        </div>
+                    <input type="checkbox" id="hautaus-task4">
+                    <label for="hautaus-task4">Matkapuhelimen käyttö työaikana</label>
+                    <span id="hautaus-task4-date" class="date-span"></span>
+                </div>
                 <div>
-            <input type="checkbox" id="hautaus-task19">
-            <label for="hautaus-task19">Hautapaikkojen peruskunnostaminen
--	Peruskunnostus
--	Käytettävät työkoneet
--	Maa-aineksien siirto ja säilyttäminen
-</label>
-            <span id="hautaus-task19-date" class="date-span"></span>
-        </div>
+                    <input type="checkbox" id="hautaus-task6">
+                    <label for="hautaus-task6">Lomapäivät, vapaat ja poissaolot</label>
+                    <span id="hautaus-task6-date" class="date-span"></span>
+                </div>
                 <div>
-            <input type="checkbox" id="hautaus-task20">
-            <label for="hautaus-task20">Hiekkakäytävien peruskunnostaminen 
--	Peruskunnostus
--	Käytettävät työvälineet ja työkoneet
--	Maa-aineksien siirto ja säilyttäminen
-</label>
-            <span id="hautaus-task20-date" class="date-span"></span>
-        </div>
-    </div>
+                    <input type="checkbox" id="hautaus-task7">
+                    <label for="hautaus-task7">Sairastuminen ja tapaturmat</label>
+                    <span id="hautaus-task7-date" class="date-span"></span>
+                </div>
+                <div>
+                    <input type="checkbox" id="hautaus-task14">
+                    <label for="hautaus-task14">Palkanmaksu</label>
+                    <span id="hautaus-task14-date" class="date-span"></span>
+                </div>
+                <div>
+                    <input type="checkbox" id="hautaus-task5">
+                    <label for="hautaus-task5">Työn sisäisten ajojen tekeminen</label>
+                    <span id="hautaus-task5-date" class="date-span"></span>
+                </div>
+                <div>
+                    <input type="checkbox" id="hautaus-task10">
+                    <label for="hautaus-task10">Vikatilanteet hautausmaalla ja kiinteistössä</label>
+                    <span id="hautaus-task10-date" class="date-span"></span>
+                </div>
+                <div>
+                    <input type="checkbox" id="hautaus-task12">
+                    <label for="hautaus-task12">Työturvallisuus ja hätätilanteet</label>
+                    <span id="hautaus-task12-date" class="date-span"></span>
+                </div>
+                <div>
+                    <input type="checkbox" id="hautaus-task8">
+                    <label for="hautaus-task8">Työnantajan direktio-oikeus ja salassapitovelvollisuus</label>
+                    <span id="hautaus-task8-date" class="date-span"></span>
+                </div>
+                <div>
+                    <input type="checkbox" id="hautaus-task9">
+                    <label for="hautaus-task9">Vastuu työtehtävistä</label>
+                    <span id="hautaus-task9-date" class="date-span"></span>
+                </div>
+                <div>
+                    <input type="checkbox" id="hautaus-task11">
+                    <label for="hautaus-task11">Asiakaspalvelu ja käyttäytyminen työntekijöiden kanssa</label>
+                    <span id="hautaus-task11-date" class="date-span"></span>
+                </div>
+                <div>
+                    <input type="checkbox" id="hautaus-task13">
+                    <label for="hautaus-task13">Työtehtävät, työskentelyalueet ja muutokset työpisteissä (yleinen)</label>
+                    <span id="hautaus-task13-date" class="date-span"></span>
+                </div>
+            </div>
+            
+            <div class="tab-content" id="hautaus-kevat" style="display:none;">
+                <h4>Hautausmaan kevät-, kesä- ja syyshoito</h4>
+                <div>
+                    <input type="checkbox" id="hautaus-task14b">
+                    <label for="hautaus-task14b">Työtehtävät haudoilla keväällä ja syksyllä</label>
+                    <span id="hautaus-task14b-date" class="date-span"></span>
+                </div>
+                        <div>
+                    <input type="checkbox" id="hautaus-task15">
+                    <label for="hautaus-task15">Puutarhajätteen ja muiden jätteiden sijoituspaikka </label>
+                    <span id="hautaus-task15-date" class="date-span"></span>
+                </div>
+                        <div>
+                    <input type="checkbox" id="hautaus-task16">
+                    <label for="hautaus-task16">Kynttilöiden poistaminen haudoilta</label>
+                    <span id="hautaus-task16-date" class="date-span"></span>
+                </div>
+                        <div>
+                    <input type="checkbox" id="hautaus-task17">
+                    <label for="hautaus-task17">Lehtien poistaminen hauta-alueilta ja hautapaikoilta ja tähän käytettävät työvälineet </label>
+                    <span id="hautaus-task17-date" class="date-span"></span>
+                </div>
+                        <div>
+                    <input type="checkbox" id="hautaus-task18">
+                    <label for="hautaus-task18">Kynttilöiden, lyhtyjen ja puutarhatarvikkeiden siirto tai poisto hautapaikalta</label>
+                    <span id="hautaus-task18-date" class="date-span"></span>
+                </div>
+                        <div>
+                    <input type="checkbox" id="hautaus-task19">
+                    <label for="hautaus-task19">Hautapaikkojen peruskunnostaminen</label>
+                    <span id="hautaus-task19-date" class="date-span"></span>
+                </div>
+                        <div>
+                    <input type="checkbox" id="hautaus-task20">
+                    <label for="hautaus-task20">Hiekkakäytävien peruskunnostaminen</label>
+                    <span id="hautaus-task20-date" class="date-span"></span>
+                </div>
+            </div>
 
-    <div class="tab-content" id="hautaus-koneet" style="display:none;">
-        <h4></h4>
-        <div>
-            <input type="checkbox" id="hautaus-task21">
-            <label for="hautaus-task21">Bobcat
--	Käyttö
--	Suojavarusteet
--	Työturvallisuus
-</label>
-            <span id="hautaus-task21-date" class="date-span"></span>
-        </div>
+            <div class="tab-content" id="hautaus-koneet" style="display:none;">
+                <h4>Työkoneet</h4>
                 <div>
-            <input type="checkbox" id="hautaus-task22">
-            <label for="hautaus-task22">Iseki pientraktori
--	Käyttö
--	Suojavarusteet
--	Työturvallisuus
-</label>
-            <span id="hautaus-task22-date" class="date-span"></span>
-        </div>
-                <div>
-            <input type="checkbox" id="hautaus-task23">
-            <label for="hautaus-task23">Kubota pientraktori
--	Käyttö
--	Suojavarusteet
--	Työturvallisuus
-</label>
-            <span id="hautaus-task23-date" class="date-span"></span>
-        </div>
-                <div>
-            <input type="checkbox" id="hautaus-task24">
-            <label for="hautaus-task24">Avant-kuormaaja
--	Käyttö
--	Suojavarusteet
--	Työturvallisuus
-</label>
-            <span id="hautaus-task24-date" class="date-span"></span>
-        </div>
-                <div>
-            <input type="checkbox" id="hautaus-task25">
-            <label for="hautaus-task25">Valmet traktori
--	Käyttö
--	Suojavarusteet
--	Työturvallisuus
-</label>
-            <span id="hautaus-task25-date" class="date-span"></span>
-        </div>
-                <div>
-            <input type="checkbox" id="hautaus-task26">
-            <label for="hautaus-task26">Työtehtävät, työskentelyalueet ja muutokset työpisteissä</label>
-            <span id="hautaus-task26-date" class="date-span"></span>
-        </div>
-                <div>
-            <input type="checkbox" id="hautaus-task27">
-            <label for="hautaus-task27">Työtehtävät, työskentelyalueet ja muutokset työpisteissä</label>
-            <span id="hautaus-task27-date" class="date-span"></span>
-        </div>
-                <div>
-            <input type="checkbox" id="hautaus-task13">
-            <label for="hautaus-task13">Työtehtävät, työskentelyalueet ja muutokset työpisteissä</label>
-            <span id="hautaus-task13-date" class="date-span"></span>
-        </div>
-                <div>
-            <input type="checkbox" id="hautaus-task13">
-            <label for="hautaus-task13">Työtehtävät, työskentelyalueet ja muutokset työpisteissä</label>
-            <span id="hautaus-task13-date" class="date-span"></span>
-        </div>
-                <div>
-            <input type="checkbox" id="hautaus-task13">
-            <label for="hautaus-task13">Työtehtävät, työskentelyalueet ja muutokset työpisteissä</label>
-            <span id="hautaus-task13-date" class="date-span"></span>
-        </div>
-    </div>
-</section>
+                    <input type="checkbox" id="hautaus-task21">
+                    <label for="hautaus-task21">Bobcat - Käyttö ja turvallisuus</label>
+                    <span id="hautaus-task21-date" class="date-span"></span>
+                </div>
+                        <div>
+                    <input type="checkbox" id="hautaus-task22">
+                    <label for="hautaus-task22">Iseki pientraktori - Käyttö ja turvallisuus</label>
+                    <span id="hautaus-task22-date" class="date-span"></span>
+                </div>
+                        <div>
+                    <input type="checkbox" id="hautaus-task23">
+                    <label for="hautaus-task23">Kubota pientraktori - Käyttö ja turvallisuus</label>
+                    <span id="hautaus-task23-date" class="date-span"></span>
+                </div>
+                        <div>
+                    <input type="checkbox" id="hautaus-task24">
+                    <label for="hautaus-task24">Avant-kuormaaja - Käyttö ja turvallisuus</label>
+                    <span id="hautaus-task24-date" class="date-span"></span>
+                </div>
+                        <div>
+                    <input type="checkbox" id="hautaus-task25">
+                    <label for="hautaus-task25">Valmet traktori - Käyttö ja turvallisuus</label>
+                    <span id="hautaus-task25-date" class="date-span"></span>
+                </div>
+                        <div>
+                    <input type="checkbox" id="hautaus-task26">
+                    <label for="hautaus-task26">Työtehtävät, työskentelyalueet (Koneet 1)</label>
+                    <span id="hautaus-task26-date" class="date-span"></span>
+                </div>
+                        <div>
+                    <input type="checkbox" id="hautaus-task27">
+                    <label for="hautaus-task27">Työtehtävät, työskentelyalueet (Koneet 2)</label>
+                    <span id="hautaus-task27-date" class="date-span"></span>
+                </div>
+            </div>
+        </section>
+
         <section class="module" id="section-lapsiperhe" style="display:none;">
             <h3>Lapsi- ja perhetyön tehtävät</h3>
             <div>
                 <input type="checkbox" id="lapsi-task1">
                 <label for="lapsi-task1">Kerhomateriaalien sijainti</label>
-                <span id="lapsi-task1-date" style="font-size: 0.9em; color: #555; margin-left: 10px;"></span>
+                <span id="lapsi-task1-date" class="date-span"></span>
             </div>
         </section>
-<section class="module" id="section-haat" style="display:none;"> <h3>Häät ja vihkiminen</h3>
+        
+        <section class="module" id="section-haat" style="display:none;"> 
+            <h3>Häät ja vihkiminen</h3>
             <div>
                 <input type="checkbox" id="haat-task1-kirkko">
                 <label for="haat-task1-kirkko">Kirkon valmistelu vihkimiseen</label>
-                <span id="haat-task1-date" style="font-size: 0.9em; color: #555; margin-left: 10px;"></span>
+                <span id="haat-task1-date" class="date-span"></span>
             </div>
             <div>
                 <input type="checkbox" id="haat-task2-opastus">
                 <label for="haat-task2-opastus">Vihkiparin opastus</label>
-                <span id="haat-task2-date" style="font-size: 0.9em; color: #555; margin-left: 10px;"></span>
+                <span id="haat-task2-date" class="date-span"></span>
             </div>
         </section>
+
         <section class="module" id="section-suntiotyo" style="display:none;">
             <h3>Suntiotyön erityistehtävät</h3>
             <div>
                 <input type="checkbox" id="suntiotyo-task1">
                 <label for="suntiotyo-task1">Jumalanpalvelusavustaminen</label>
-                <span id="suntiotyo-task1-date" style="font-size: 0.9em; color: #555; margin-left: 10px;"></span>
+                <span id="suntiotyo-task1-date" class="date-span"></span>
             </div>
         </section>
+
         <section class="module" id="section-kausityo" style="display:none;">
             <h3>Hautausmaan kausityöntekijän tehtävät</h3>
             
             <div>
                 <input type="checkbox" id="kausityo-task1">
-                <label for="kausityo-task1">Työvaatteiden ja suojavarusteiden käyttö</label>
-                <span id="kausityo-task1-date" style="font-size: 0.9em; color: #555; margin-left: 10px;"></span>
+                <label for="kausityo-task1">Työvaatteiden ja suojavarusteiden käyttö 1</label>
+                <span id="kausityo-task1-date" class="date-span"></span>
             </div>
-
             <div>
                 <input type="checkbox" id="kausityo-task2">
-                <label for="kausityo-task2">Roskien lajittelu ja kierrätyspisteet</label>
-                <span id="kausityo-task2-date" style="font-size: 0.9em; color: #555; margin-left: 10px;"></span>
+                <label for="kausityo-task2">Roskien lajittelu ja kierrätyspisteet 1</label>
+                <span id="kausityo-task2-date" class="date-span"></span>
             </div>
-
             <div>
                 <input type="checkbox" id="kausityo-task3">
-                <label for="kausityo-task3">Haravointi ja lehtien keruu</label>
-                <span id="kausityo-task3-date" style="font-size: 0.9em; color: #555; margin-left: 10px;"></span>
+                <label for="kausityo-task3">Haravointi ja lehtien keruu 1</label>
+                <span id="kausityo-task3-date" class="date-span"></span>
             </div>
             <div>
                 <input type="checkbox" id="kausityo-task4">
-                <label for="kausityo-task1">Työvaatteiden ja suojavarusteiden käyttö</label>
-                <span id="kausityo-task1-date" style="font-size: 0.9em; color: #555; margin-left: 10px;"></span>
+                <label for="kausityo-task4">Työvaatteiden ja suojavarusteiden käyttö 2</label>
+                <span id="kausityo-task4-date" class="date-span"></span>
             </div>
-
             <div>
                 <input type="checkbox" id="kausityo-task5">
-                <label for="kausityo-task2">Roskien lajittelu ja kierrätyspisteet</label>
-                <span id="kausityo-task2-date" style="font-size: 0.9em; color: #555; margin-left: 10px;"></span>
+                <label for="kausityo-task5">Roskien lajittelu ja kierrätyspisteet 2</label>
+                <span id="kausityo-task5-date" class="date-span"></span>
             </div>
-
             <div>
                 <input type="checkbox" id="kausityo-task6">
-                <label for="kausityo-task3">Haravointi ja lehtien keruu</label>
-                <span id="kausityo-task3-date" style="font-size: 0.9em; color: #555; margin-left: 10px;"></span>
+                <label for="kausityo-task6">Haravointi ja lehtien keruu 2</label>
+                <span id="kausityo-task6-date" class="date-span"></span>
             </div>
-
             <div>
                 <input type="checkbox" id="kausityo-task7">
-                <label for="kausityo-task1">Työvaatteiden ja suojavarusteiden käyttö</label>
-                <span id="kausityo-task1-date" style="font-size: 0.9em; color: #555; margin-left: 10px;"></span>
+                <label for="kausityo-task7">Työvaatteiden ja suojavarusteiden käyttö 3</label>
+                <span id="kausityo-task7-date" class="date-span"></span>
             </div>
-
             <div>
                 <input type="checkbox" id="kausityo-task8">
-                <label for="kausityo-task2">Roskien lajittelu ja kierrätyspisteet</label>
-                <span id="kausityo-task2-date" style="font-size: 0.9em; color: #555; margin-left: 10px;"></span>
+                <label for="kausityo-task8">Roskien lajittelu ja kierrätyspisteet 3</label>
+                <span id="kausityo-task8-date" class="date-span"></span>
             </div>
-
             <div>
-                <input type="checkbox" id="kausityo-task8">
-                <label for="kausityo-task3">Haravointi ja lehtien keruu</label>
-                <span id="kausityo-task3-date" style="font-size: 0.9em; color: #555; margin-left: 10px;"></span>
-            </div>
-            
-            </section>
-
-        <section class="module" id="section-shared-docs">
-            <h3>Jaetut dokumentit</h3>
-            <ul id="document-list">
-                <li>Ladataan dokumentteja...</li>
-            </ul>
-        </section>
-
-        <hr>
-        <button id="saveButton">Tallenna edistyminen</button>
-        <p id="saveStatus" style="color:green;"></p>
-
-    </main>
-
-    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-auth-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-storage-compat.js"></script>
-    
-    <script src="js/firebase-config.js"></script>
-    <script>
-        firebase.initializeApp(firebaseConfig);
-    </script>
-    <script src="js/app-logic.js"></script>
-
-</body>
-</html>
+                <input type="checkbox" id="kausityo-task9">
+                <label for="kausityo-task9">Haravointi ja lehtien keruu 3</label>
+                <span id="kausityo-task9-
