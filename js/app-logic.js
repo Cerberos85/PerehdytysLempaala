@@ -1,5 +1,5 @@
 // js/app-logic.js
-
+console.log("TESTI: app-logic.js on ladattu onnistuneesti!");
 const auth = firebase.auth();
 const db = firebase.firestore();
 
