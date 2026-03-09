@@ -38,44 +38,39 @@ auth.onAuthStateChanged(async (user) => {
 
 // --- 2. NÄKYMÄN HALLINTA (ROOLIT) ---
 
+// --- 2. NÄKYMÄN HALLINTA (ROOLIT) ---
+
 function showSectionsBasedOnRole(role) {
-    // Piilotetaan ensin kaikki
+    // 1. Piilotetaan ensin kaikki osiot
     const allSections = document.querySelectorAll('.module');
     allSections.forEach(section => {
-        if (section.id !== 'section-shared-docs') { // Jaetut dokumentit näkyvät kaikille
+        if (section.id !== 'section-shared-docs') { // Jaetut dokumentit näkyvät aina kaikille
             section.style.display = 'none';
         }
     });
 
-    // Näytetään rooliin perustuvat osiot
-    if (role === 'Hautaustoimi') {
-        const el = document.getElementById('section-hautaus');
-        if (el) el.style.display = 'block';
-    } 
-    else if (role === 'Kausityö') {
-        const el = document.getElementById('section-kausityo');
-        if (el) el.style.display = 'block';
-    }
-    else if (role === 'Lapsiperhe' || role === 'Lapsi ja perhetyö') {
-        const el = document.getElementById('section-lapsiperhe');
-        if (el) el.style.display = 'block';
-    }
-    else if (role === 'Suntio') { 
-        const el1 = document.getElementById('section-suntio');
-        const el2 = document.getElementById('section-haat');
-        if (el1) el1.style.display = 'block';
-        if (el2) el2.style.display = 'block';
-    }
-    else if (role === 'Suntiotyö') {
-        const el = document.getElementById('section-suntiotyo');
-        if (el) el.style.display = 'block';
-    }
-    else if (role === 'Toimisto') {
-        const el = document.getElementById('section-toimisto');
-        if (el) el.style.display = 'block';
-    }
-}
+    // 2. Määritellään, mitä osioita kukin rooli saa nähdä
+    // Tämä on paljon selkeämpi tapa hallita näkyvyyttä (kuin pitkä if/else -ketju).
+    const roleVisibility = {
+        'Hautaustoimi': ['section-hautaus', 'section-kausityo'], // Hautaustoimi näkee molemmat
+        'Kausityö': ['section-hautaus', 'section-kausityo'],     // Kausityö näkee myös molemmat
+        'Suntio': ['section-suntio', 'section-haat', 'section-suntiotyo'],
+        'Toimisto': ['section-toimisto'],
+        'Lapsiperhe': ['section-lapsiperhe'],
+        'Lapsi ja perhetyö': ['section-lapsiperhe'] // Varalta vanha kirjoitusasu
+    };
 
+    // 3. Haetaan käyttäjän roolia vastaava lista näytettävistä osioista
+    const sectionsToShow = roleVisibility[role] || []; // Jos roolia ei löydy, näytetään tyhjä lista
+
+    // 4. Käydään lista läpi ja muutetaan CSS 'display: block'
+    sectionsToShow.forEach(sectionId => {
+        const el = document.getElementById(sectionId);
+        if (el) {
+            el.style.display = 'block';
+        }
+    });
+}
 // --- 3. TIETOJEN LATAAMINEN FIRESTORESTA ---
 
 async function loadUserProgress(uid) {
