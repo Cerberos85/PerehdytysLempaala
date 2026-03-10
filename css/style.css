@@ -36,7 +36,13 @@ header {
     margin-top: 0;
     margin-bottom: 20px;
 }
-
+/* --- Etusivun logo --- */
+.login-logo {
+    max-width: 150px; /* Voit säätää tätä lukua logon mittasuhteiden mukaan (esim. 200px) */
+    height: auto;
+    margin: 0 auto 20px auto; /* Keskittää logon ja jättää 20px tyhjää tilaa alaspäin */
+    display: block;
+}
 /* --- Muiden sivujen pääsisältö (App & Manager) --- */
 main {
     max-width: 800px; /* Maksimileveys työpöydällä */
