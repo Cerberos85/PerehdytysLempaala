@@ -264,3 +264,16 @@ th {
         flex-wrap: wrap; 
     }
 }
+/* --- Pakotetaan perehdytystehtävät aina listaksi (allekkain) --- */
+.module {
+    display: flex;
+    flex-direction: column;
+}
+
+.module div {
+    display: flex;
+    align-items: center; /* Keskittää ruksin ja tekstin nätisti */
+    flex-wrap: wrap;     
+    width: 100%;
+    margin-bottom: 12px; /* Jättää tilaa rivien väliin */
+}

@@ -10,24 +10,34 @@ const passwordInput = document.getElementById('password');
 const errorMessage = document.getElementById('error-message');
 
 loginButton.addEventListener('click', () => {
-    const email = emailInput.value;
-    const password = passwordInput.value;
+    const email = document.getElementById('email').value;
+    const password = document.getElementById('password').value;
+    const errorMessage = document.getElementById('error-message');
 
-    errorMessage.textContent = "";
-    errorMessage.style.color = "red";
-
-    // 1. Aloitetaan kirjautuminen
     auth.signInWithEmailAndPassword(email, password)
-        .then((userCredential) => {
-            console.log("1. Kirjautuminen onnistui käyttäjällä:", userCredential.user.email);
+        .then(async (userCredential) => {
+            const user = userCredential.user;
             
-            // 2. Kutsutaan ohjausfunktiota
-            // TÄRKEÄÄ: Tämän jälkeen EI SAA olla window.location.href -kutsua!
-            checkUserRoleAndRedirect(userCredential.user);
+            // 1. Tarkistetaan tietokannasta, onko salasanan vaihto pakotettu
+            const userDoc = await db.collection('userProgress').doc(user.uid).get();
+            
+            if (userDoc.exists && userDoc.data().requiresPasswordChange === true) {
+                // Jos on, heitetään käyttäjä salasananvaihtosivulle!
+                window.location.href = 'change-password.html';
+                return; // Lopetetaan suoritus tähän
+            }
+
+            // 2. Jos vaihtoa ei vaadita, katsotaan rooli ja ohjataan oikealle sivulle
+            const idTokenResult = await user.getIdTokenResult();
+            if (idTokenResult.claims.manager || idTokenResult.claims.superAdmin) {
+                window.location.href = 'manager.html';
+            } else {
+                window.location.href = 'app.html';
+            }
         })
         .catch((error) => {
             console.error("Kirjautumisvirhe:", error);
-            errorMessage.textContent = "Virhe: " + error.message;
+            errorMessage.textContent = "Väärä sähköposti tai salasana.";
         });
 });
 

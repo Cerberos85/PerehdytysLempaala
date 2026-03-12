@@ -1,11 +1,11 @@
 // js/app-logic.js
-console.log("TESTI: app-logic.js on ladattu onnistuneesti!");
+
 const auth = firebase.auth();
 const db = firebase.firestore();
 
 let currentUser; 
 const logoutButton = document.getElementById('logoutButton');
-const saveStatus = document.getElementById('saveStatus'); // Jos haluat näyttää "Tallennettu" -viestin
+const saveStatus = document.getElementById('saveStatus'); 
 
 // --- 1. AUTH JA ALUSTUS ---
 
@@ -27,7 +27,7 @@ auth.onAuthStateChanged(async (user) => {
         // Lataa käyttäjän rastit tietokannasta
         await loadUserProgress(user.uid);
 
-        // Kun tiedot on ladattu, aktivoidaan kuuntelijat, jotta checkboxien klikkailu tallentuu
+        // Kun tiedot on ladattu, aktivoidaan kuuntelijat
         attachCheckboxListeners();
 
     } else {
@@ -38,32 +38,31 @@ auth.onAuthStateChanged(async (user) => {
 
 // --- 2. NÄKYMÄN HALLINTA (ROOLIT) ---
 
-// --- 2. NÄKYMÄN HALLINTA (ROOLIT) ---
-
 function showSectionsBasedOnRole(role) {
     // 1. Piilotetaan ensin kaikki osiot
     const allSections = document.querySelectorAll('.module');
     allSections.forEach(section => {
-        if (section.id !== 'section-shared-docs') { // Jaetut dokumentit näkyvät aina kaikille
+        if (section.id !== 'section-shared-docs') { 
             section.style.display = 'none';
         }
     });
 
     // 2. Määritellään, mitä osioita kukin rooli saa nähdä
-    // Tämä on paljon selkeämpi tapa hallita näkyvyyttä (kuin pitkä if/else -ketju).
     const roleVisibility = {
-        'Hautaustoimi': ['section-hautaus', 'section-kausityo'], // Hautaustoimi näkee molemmat
-        'Kausityö': ['section-hautaus', 'section-kausityo'],     // Kausityö näkee myös molemmat
+        'Hautaustoimi': ['section-hautaus', 'section-kausityo'], 
+        'Hautaus': ['section-hautaus', 'section-kausityo'], // Varmuuden vuoksi myös vanha nimi
+        'Kausityö': ['section-hautaus', 'section-kausityo'],     
         'Suntio': ['section-suntio', 'section-haat', 'section-suntiotyo'],
+        'Suntiotyö': ['section-suntiotyo', 'section-haat'],
         'Toimisto': ['section-toimisto'],
         'Lapsiperhe': ['section-lapsiperhe'],
-        'Lapsi ja perhetyö': ['section-lapsiperhe'] // Varalta vanha kirjoitusasu
+        'Lapsi ja perhetyö': ['section-lapsiperhe'] 
     };
 
-    // 3. Haetaan käyttäjän roolia vastaava lista näytettävistä osioista
-    const sectionsToShow = roleVisibility[role] || []; // Jos roolia ei löydy, näytetään tyhjä lista
+    // 3. Haetaan käyttäjän roolia vastaava lista
+    const sectionsToShow = roleVisibility[role] || []; 
 
-    // 4. Käydään lista läpi ja muutetaan CSS 'display: block'
+    // 4. Näytetään oikeat laatikot
     sectionsToShow.forEach(sectionId => {
         const el = document.getElementById(sectionId);
         if (el) {
@@ -71,6 +70,7 @@ function showSectionsBasedOnRole(role) {
         }
     });
 }
+
 // --- 3. TIETOJEN LATAAMINEN FIRESTORESTA ---
 
 async function loadUserProgress(uid) {
@@ -82,31 +82,28 @@ async function loadUserProgress(uid) {
             const data = doc.data();
             console.log("LADATUT TIEDOT:", data);
 
-            // Käydään kaikki sivulla olevat checkboxit läpi
             const checkboxes = document.querySelectorAll('input[type="checkbox"]');
             
             checkboxes.forEach(checkbox => {
                 const taskId = checkbox.id;
-                // Kategoria saadaan ID:stä. Esim. "hautaus-task1" -> "hautaus"
                 const category = taskId.split('-')[0]; 
                 
-                // Jos tietokannassa on tälle kategorialle ja tehtävälle dataa
                 if (data[category] && data[category][taskId]) {
                     const taskInfo = data[category][taskId];
                     const dateSpan = document.getElementById(`${taskId}-date`);
                     
-                    // A) Jos tehtävä on tehty aiemmin (vanha boolean-tyyli tai uusi objekti)
                     if (taskInfo === true || taskInfo.completed === true) {
                         checkbox.checked = true;
                         
-                        // Uusi tyyli: näytetään pvm
                         if (dateSpan && taskInfo.date) {
+                            // TALLENNETAAN AIKALEIMA HTML-ELEMENTTIIN 4 VRK TARKISTUSTA VARTEN
+                            checkbox.dataset.completedAt = taskInfo.date.seconds * 1000;
+
                             const dateObj = new Date(taskInfo.date.seconds * 1000);
                             dateSpan.innerText = `(${dateObj.toLocaleDateString('fi-FI')} ${dateObj.toLocaleTimeString('fi-FI', {hour: '2-digit', minute:'2-digit'})})`;
                             dateSpan.style.color = "#555";
                         }
                     } 
-                    // B) Jos tehtävä on peruttu ja sille on kirjoitettu syy
                     else if (taskInfo.completed === false && taskInfo.removedReason) {
                         checkbox.checked = false;
                         if (dateSpan) {
@@ -122,7 +119,7 @@ async function loadUserProgress(uid) {
     }
 }
 
-// --- 4. CHECKBOXIEN KUUNTELIJA JA TALLENNUS (AUTOSAVE) ---
+// --- 4. CHECKBOXIEN KUUNTELIJA JA TALLENNUS (AUTOSAVE & 4 VRK SÄÄNTÖ) ---
 
 function attachCheckboxListeners() {
     const checkboxes = document.querySelectorAll('input[type="checkbox"]');
@@ -132,13 +129,15 @@ function attachCheckboxListeners() {
             const taskId = event.target.id;
             const isChecked = event.target.checked;
             
-            // Haetaan kategoria ID:stä (esim. "suntio-task1" -> "suntio")
             const category = taskId.split('-')[0]; 
             const dateSpan = document.getElementById(`${taskId}-date`);
 
             if (isChecked) {
                 // --- TEHTÄVÄ SUORITETAAN ---
                 const now = new Date();
+                
+                // Tallennetaan uusi aikaleima muistiin välittömästi selaimessa
+                checkbox.dataset.completedAt = now.getTime();
                 
                 if (dateSpan) {
                     dateSpan.innerText = `(${now.toLocaleDateString('fi-FI')} ${now.toLocaleTimeString('fi-FI', {hour: '2-digit', minute:'2-digit'})})`;
@@ -148,20 +147,44 @@ function attachCheckboxListeners() {
                 await saveTaskToDb(category, taskId, true, now, null);
 
             } else {
-                // --- TEHTÄVÄ PERUUTETAAN ---
-                const reason = prompt("Miksi haluat perua tämän perehdytysmerkinnän?\nKirjoita syy tähän:");
+                // --- TEHTÄVÄ PERUUTETAAN (Otetaan rasti pois) ---
+                let requireReason = false;
                 
-                if (reason && reason.trim() !== "") {
-                    // Syy annettiin -> Sallitaan poisto
-                    if (dateSpan) {
-                        dateSpan.innerText = `(Peruttu: ${reason})`;
-                        dateSpan.style.color = "red";
+                // 1. Tarkistetaan onko 4 vrk (96 tuntia) kulunut
+                if (checkbox.dataset.completedAt) {
+                    const completedTime = parseInt(checkbox.dataset.completedAt, 10);
+                    const currentTime = new Date().getTime();
+                    const hoursDifference = (currentTime - completedTime) / (1000 * 60 * 60); // Ero tunteina
+                    
+                    if (hoursDifference > 96) {
+                        requireReason = true; // Yli 96h (4 vrk) kulunut -> Vaaditaan syy
                     }
-                    await saveTaskToDb(category, taskId, false, new Date(), reason);
+                }
+
+                // 2. Kysytään syytä VAIN jos 4 vrk on ylittynyt
+                if (requireReason) {
+                    const reason = prompt("Perehdytyksen suorittamisesta on kulunut yli 4 vuorokautta.\nMiksi haluat perua tämän merkinnän?\nKirjoita syy tähän:");
+                    
+                    if (reason && reason.trim() !== "") {
+                        // Syy annettu -> Sallitaan poisto ja tallennetaan syy
+                        checkbox.removeAttribute('data-completedAt');
+                        if (dateSpan) {
+                            dateSpan.innerText = `(Peruttu: ${reason})`;
+                            dateSpan.style.color = "red";
+                        }
+                        await saveTaskToDb(category, taskId, false, null, reason);
+                    } else {
+                        // Ei syytä -> Estetään poisto, rasti takaisin
+                        alert("Kirjallinen syy on pakollinen yli 4 vuorokautta vanhoille merkinnöille. Merkintää ei poistettu.");
+                        event.target.checked = true; 
+                    }
                 } else {
-                    // Ei syytä -> Estetään poisto
-                    alert("Kirjallinen syy on pakollinen. Merkintää ei poistettu.");
-                    event.target.checked = true; // Rasti takaisin
+                    // 3. Alle 4 vrk kulunut -> Poistetaan äänettömästi (katsotaan vahinkoklikkaukseksi)
+                    checkbox.removeAttribute('data-completedAt');
+                    if (dateSpan) {
+                        dateSpan.innerText = ""; // Tyhjennetään teksti ruudulta
+                    }
+                    await saveTaskToDb(category, taskId, false, null, null);
                 }
             }
         });
@@ -176,13 +199,24 @@ async function saveTaskToDb(category, taskId, isCompleted, dateObj, reasonText) 
 
     const userRef = db.collection('userProgress').doc(currentUser.uid);
     
+    // Rakennetaan tallennettava objekti
     const taskData = {
-        completed: isCompleted,
-        date: firebase.firestore.Timestamp.fromDate(dateObj)
+        completed: isCompleted
     };
     
+    // Jos päivämäärä annetaan (rasti laitetaan ruutuun), tallennetaan Timestamp.
+    // Jos päivämäärää ei anneta (rasti otetaan pois), poistetaan vanha Timestamp tietokannasta.
+    if (dateObj) {
+        taskData.date = firebase.firestore.Timestamp.fromDate(dateObj);
+    } else {
+        taskData.date = firebase.firestore.FieldValue.delete();
+    }
+    
+    // Jos syy annetaan, tallennetaan se. Jos ei, poistetaan mahdollinen vanha syy tietokannasta.
     if (reasonText) {
         taskData.removedReason = reasonText;
+    } else {
+        taskData.removedReason = firebase.firestore.FieldValue.delete(); 
     }
 
     try {
@@ -191,7 +225,7 @@ async function saveTaskToDb(category, taskId, isCompleted, dateObj, reasonText) 
                 [taskId]: taskData
             },
             lastUpdated: firebase.firestore.Timestamp.now()
-        }, { merge: true }); // Tärkeää, ettei ylikirjoita muuta dataa
+        }, { merge: true }); // Merge varmistaa, ettei ylikirjoiteta muita tehtäviä
         
         if (saveStatus) {
             saveStatus.textContent = "Edistyminen tallennettu!";
