@@ -277,3 +277,10 @@ th {
     width: 100%;
     margin-bottom: 12px; /* Jättää tilaa rivien väliin */
 }
+/* --- Lukitun (lataavan) napin tyyli --- */
+button:disabled {
+    background-color: #a0a0a0 !important; /* Harmaampi väri */
+    color: #e0e0e0 !important;
+    cursor: wait; /* Muuttaa hiiren kursorin latauskuvakkeeksi (tiimalasi/pyörivä ympyrä) */
+    opacity: 0.8;
+}

@@ -308,10 +308,21 @@ async function loadSharedDocuments() {
 
 // --- 7. ULOSKIRJAUTUMINEN ---
 
+// --- ULOSKIRJAUTUMINEN ---
 if(logoutButton) {
     logoutButton.addEventListener('click', () => {
+        // 1. Visuaalinen palaute
+        const originalText = logoutButton.textContent;
+        logoutButton.textContent = "Kirjaudutaan ulos...";
+        logoutButton.disabled = true;
+
         auth.signOut().then(() => {
             window.location.href = 'index.html';
+        }).catch((error) => {
+            console.error("Virhe uloskirjautumisessa:", error);
+            // 2. Palautetaan nappi, jos nettiyhteys pätkii tms.
+            logoutButton.textContent = originalText;
+            logoutButton.disabled = false;
         });
     });
 }
