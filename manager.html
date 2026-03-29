@@ -15,12 +15,13 @@
 
     <main>
         <h2>Perehdytysten tila</h2>
-<div style="margin-bottom: 15px; padding: 10px; background-color: #e9ecef; border-radius: 4px; display: inline-block;">
-    <input type="checkbox" id="showEndedContracts" style="width: auto; margin-right: 8px; transform: scale(1.2);">
-    <label for="showEndedContracts" style="font-weight: bold; cursor: pointer;">Näytä myös päättyneet työsuhteet (max 2v vanhat)</label>
-</div>
+        
+        <div style="margin-bottom: 15px; padding: 10px; background-color: #e9ecef; border-radius: 4px; display: inline-block;">
+            <input type="checkbox" id="showEndedContracts" style="width: auto; margin-right: 8px; transform: scale(1.2);">
+            <label for="showEndedContracts" style="font-weight: bold; cursor: pointer;">Näytä myös päättyneet työsuhteet (max 2v vanhat)</label>
+        </div>
 
-<div id="report-container">
+        <div id="report-container">
             <p>Ladataan raportteja...</p>
         </div>
 
@@ -33,26 +34,25 @@
             
             <p id="uploadStatus" style="font-weight: bold; margin-top: 10px;"></p>
         </section>
-
     </main>
-<div id="detailModal" class="modal">
-  <div class="modal-content">
-    <span class="close-btn">&times;</span>
-    <h2 id="modalTitle">Työntekijän perehdytys</h2>
-    <div id="modalBody">
+
+    <div id="detailModal" class="modal">
+        <div class="modal-content">
+            <span class="close-btn">&times;</span>
+            <h2 id="modalTitle">Työntekijän perehdytys</h2>
+            <div id="modalBody"></div>
         </div>
-  </div>
-</div>
-    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-auth-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-storage-compat.js"></script>
+    </div>
+
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-storage-compat.js"></script>
     
     <script src="js/firebase-config.js"></script>
     <script>
         firebase.initializeApp(firebaseConfig);
     </script>
-    
     <script src="js/manager-logic.js"></script>
 
 </body>
