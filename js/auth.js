@@ -80,3 +80,46 @@ async function checkUserRoleAndRedirect(user) {
         }
     }
 }
+// --- SALASANAN PALAUTUS ---
+
+const forgotPasswordLink = document.getElementById('forgotPasswordLink');
+
+if (forgotPasswordLink) {
+    forgotPasswordLink.addEventListener('click', (event) => {
+        event.preventDefault(); // Estää sivua hyppäämästä ylös linkkiä klikatessa
+        
+        const email = emailInput.value.trim(); // Haetaan teksti sähköpostikentästä
+        const errorMessage = document.getElementById('error-message');
+
+        // 1. Tarkistetaan, onko sähköposti kirjoitettu
+        if (!email) {
+            errorMessage.style.color = "red";
+            errorMessage.textContent = "Kirjoita sähköpostiosoitteesi yllä olevaan kenttään ja paina linkkiä uudelleen.";
+            return;
+        }
+
+        // 2. Visuaalinen palaute käyttäjälle
+        errorMessage.style.color = "blue";
+        errorMessage.textContent = "Lähetetään palautuslinkkiä...";
+
+        // 3. Pyydetään Firebasea lähettämään palautusviesti
+        auth.sendPasswordResetEmail(email)
+            .then(() => {
+                errorMessage.style.color = "green";
+                errorMessage.textContent = "Salasanan palautuslinkki on lähetetty sähköpostiisi!";
+            })
+            .catch((error) => {
+                console.error("Virhe salasanan palautuksessa:", error);
+                errorMessage.style.color = "red";
+                
+                // Suomennetaan yleisimmät Firebasen virheilmoitukset
+                if (error.code === 'auth/user-not-found') {
+                    errorMessage.textContent = "Tällä sähköpostilla ei löytynyt käyttäjää.";
+                } else if (error.code === 'auth/invalid-email') {
+                    errorMessage.textContent = "Tarkista, että sähköpostiosoite on kirjoitettu oikein.";
+                } else {
+                    errorMessage.textContent = "Virhe linkin lähetyksessä. Yritä myöhemmin uudelleen.";
+                }
+            });
+    });
+}

@@ -10,10 +10,23 @@
     <div class="login-container">
         <img src="img/logo.png" alt="Lempäälän seurakunta" class="login-logo">
         <h2>Kirjaudu sisään</h2>
+        
         <input type="email" id="email" placeholder="Sähköposti">
         <input type="password" id="password" placeholder="Salasana">
+        
         <button id="loginButton">Kirjaudu</button>
+        
+        <p style="margin-top: 10px;">
+            <a href="#" id="forgotPasswordLink" style="font-size: 0.9em; color: #0056b3; text-decoration: none;">Salasana unohtunut?</a>
+        </p>
+
         <p id="error-message" style="color:red;"></p>
+
+        <div style="margin-top: 20px; border-top: 1px solid #eee; padding-top: 15px;">
+            <a href="docs/Tietosuojaseloste.pdf" target="_blank" style="font-size: 0.8em; color: #666; text-decoration: underline;">
+                Tietosuojaseloste
+            </a>
+        </div>
     </div>
 
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
