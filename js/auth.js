@@ -22,29 +22,25 @@ if (loginButton) {
         loginButton.disabled = true;                  // Lukitaan nappi, jottei sitä voi painaa kahdesti
         errorMessage.textContent = "";                // Tyhjennetään vanhat virheet ruudulta
 
-        auth.signInWithEmailAndPassword(email, password)
+auth.signInWithEmailAndPassword(email, password)
             .then(async (userCredential) => {
                 const user = userCredential.user;
                 
-                // --- 2. Tarkistetaan tietokannasta, onko salasanan vaihto pakotettu ---
+                // --- PAKOTETAAN TOKENIN JA ROOLIEN PÄIVITYS ---
+                // true-parametri pakottaa Firebasen hakemaan tuoreet Claims-tiedot palvelimelta,
+                // mikä korjaa tilanteen jos salasana on juuri vaihdettu sähköpostilinkin kautta.
+                await user.getIdTokenResult(true);
+
+                // Tarkistetaan tietokannasta, onko salasanan vaihto pakotettu (se ensimmäinen kerta)
                 const userDoc = await db.collection('userProgress').doc(user.uid).get();
                 
                 if (userDoc.exists && userDoc.data().requiresPasswordChange === true) {
-                    // Jos on, heitetään käyttäjä salasananvaihtosivulle!
                     window.location.href = 'change-password.html';
-                    return; // Lopetetaan suoritus tähän
+                    return; 
                 }
 
-                // --- 3. Jos vaihtoa ei vaadita, käytetään erillistä funktiota roolin tarkistukseen ---
+                // Jos kaikki on ok, ohjataan oikeaan näkymään
                 await checkUserRoleAndRedirect(user);
-            })
-            .catch((error) => {
-                console.error("Kirjautumisvirhe:", error);
-                errorMessage.textContent = "Väärä sähköposti tai salasana.";
-                
-                // --- 4. PALAUTETAAN NAPPI NORMAALIKSI VIRHETILANTEESSA ---
-                loginButton.textContent = originalText;
-                loginButton.disabled = false;
             });
     });
 }
