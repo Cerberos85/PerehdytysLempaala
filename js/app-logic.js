@@ -57,6 +57,7 @@ function showSectionsBasedOnRole(role) {
         'Toimisto': ['section-toimisto'],
         'Lapsiperhe': ['section-lapsiperhe'],
         'Lapsi ja perhetyö': ['section-lapsiperhe'] 
+        'Diakonia': ['section-diakonia']
     };
 
     // 3. Haetaan käyttäjän roolia vastaava lista

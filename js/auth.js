@@ -1,8 +1,5 @@
 // js/auth.js
 
-// Alustetaan Firebase
-// js/auth.js
-
 const auth = firebase.auth();
 const db = firebase.firestore();
 
@@ -21,14 +18,13 @@ if (loginButton) {
         loginButton.textContent = "Kirjaudutaan...";  // Vaihdetaan teksti
         loginButton.disabled = true;                  // Lukitaan nappi, jottei sitä voi painaa kahdesti
         errorMessage.textContent = "";                // Tyhjennetään vanhat virheet ruudulta
+        errorMessage.style.color = "red";             // Varmistetaan, että virheet näkyvät punaisella
 
-auth.signInWithEmailAndPassword(email, password)
+        auth.signInWithEmailAndPassword(email, password)
             .then(async (userCredential) => {
                 const user = userCredential.user;
                 
                 // --- PAKOTETAAN TOKENIN JA ROOLIEN PÄIVITYS ---
-                // true-parametri pakottaa Firebasen hakemaan tuoreet Claims-tiedot palvelimelta,
-                // mikä korjaa tilanteen jos salasana on juuri vaihdettu sähköpostilinkin kautta.
                 await user.getIdTokenResult(true);
 
                 // Tarkistetaan tietokannasta, onko salasanan vaihto pakotettu (se ensimmäinen kerta)
@@ -41,6 +37,25 @@ auth.signInWithEmailAndPassword(email, password)
 
                 // Jos kaikki on ok, ohjataan oikeaan näkymään
                 await checkUserRoleAndRedirect(user);
+            })
+            .catch((error) => {
+                // --- 2. VIRHEENKÄSITTELY (UUSI LISÄYS) ---
+                
+                // Palautetaan nappi heti normaaliksi
+                loginButton.disabled = false;
+                loginButton.textContent = originalText;
+
+                // Näytetään käyttäjälle ymmärrettävä virheilmoitus ruudulla
+                if (error.code === 'auth/invalid-credential' || 
+                    error.code === 'auth/wrong-password' || 
+                    error.code === 'auth/user-not-found') {
+                    errorMessage.textContent = "Sähköposti tai salasana on väärin.";
+                } else if (error.code === 'auth/too-many-requests') {
+                    errorMessage.textContent = "Liian monta yritystä. Yritä uudelleen 15 minuutin kuluttua.";
+                } else {
+                    errorMessage.textContent = "Kirjautumisessa tapahtui virhe. Yritä uudelleen.";
+                    console.error("Firebase kirjautumisvirhe:", error);
+                }
             });
     });
 }
@@ -76,6 +91,7 @@ async function checkUserRoleAndRedirect(user) {
         }
     }
 }
+
 // --- SALASANAN PALAUTUS ---
 
 const forgotPasswordLink = document.getElementById('forgotPasswordLink');

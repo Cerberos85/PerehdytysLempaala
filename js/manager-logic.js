@@ -11,17 +11,13 @@ const fileUploadInput = document.getElementById('fileUploadInput');
 const fileUploadButton = document.getElementById('fileUploadButton');
 const uploadStatus = document.getElementById('uploadStatus');
 
-// UUSI: Etsitään valintaruutu (Näytä päättyneet)
+// Etsitään valintaruutu (Näytä päättyneet)
 const showEndedCheckbox = document.getElementById('showEndedContracts');
 if (showEndedCheckbox) {
     showEndedCheckbox.addEventListener('change', () => {
         loadAllEmployeeProgress(); // Ladataan taulukko uudelleen kun ruksi laitetaan päälle/pois
     });
 }
-
-// Modal-elementit (Tarkasteluikkuna)
-const modal = document.getElementById("detailModal");
-const closeModalBtn = document.getElementsByClassName("close-btn")[0];
 
 // --- 1. AUTH JA ALUSTUS ---
 
@@ -49,38 +45,25 @@ auth.onAuthStateChanged(async (user) => {
                     });
                 }
 
-                // 3. Aktivoidaan raporttitaulukon napit (Delegointi)
+                // 3. Aktivoidaan korttien napit (Päätä/Palauta työsuhde)
                 if (reportContainer) {
                     reportContainer.addEventListener('click', (event) => {
                         
                         // A) Työsuhteen päättäminen
                         if (event.target.classList.contains('end-contract-btn')) {
                             const userId = event.target.dataset.userid;
-                            const userName = event.target.closest('tr').cells[0].textContent.trim();
+                            const userName = event.target.dataset.name;
                             if (confirm(`Haluatko varmasti merkitä käyttäjän ${userName} työsuhteen päättyneeksi?\nTiedot poistuvat tietokannasta automaattisesti 2 vuoden kuluttua.`)) {
                                 markEmploymentEnded(userId);
                             }
                         }
                         
-                        // B) Työsuhteen palauttaminen (UUSI)
+                        // B) Työsuhteen palauttaminen
                         if (event.target.classList.contains('restore-contract-btn')) {
                             const userId = event.target.dataset.userid;
-                            const userName = event.target.closest('tr').cells[0].textContent.trim();
+                            const userName = event.target.dataset.name;
                             if (confirm(`Haluatko palauttaa käyttäjän ${userName} työsuhteen voimaan?`)) {
                                 restoreEmployment(userId);
-                            }
-                        }
-
-                        // C) Tarkastelu (Modal)
-                        if (event.target.classList.contains('view-details-btn')) {
-                            const rawData = event.target.getAttribute('data-entry');
-                            const userName = event.target.getAttribute('data-name');
-                            
-                            try {
-                                const data = JSON.parse(decodeURIComponent(rawData));
-                                openDetailModal(userName, data);
-                            } catch (e) {
-                                console.error("Virhe datan purkamisessa:", e);
                             }
                         }
                     });
@@ -99,7 +82,29 @@ auth.onAuthStateChanged(async (user) => {
     }
 });
 
-// --- 2. RAPORTTIEN LATAUS ---
+// --- 2. APUFUNKTIOT TEHTÄVIEN MUOTOILUUN ---
+
+function formatCategoryName(key) {
+    if (key.startsWith('diakonia')) return 'Diakoniatyö';
+    if (key.startsWith('hautaus')) return 'Hautaustoimi';
+    if (key.startsWith('kausityo')) return 'Kausityö';
+    if (key.startsWith('suntio')) return 'Suntion tehtävät';
+    if (key.startsWith('haat')) return 'Häät ja kirkolliset toimitukset';
+    if (key.startsWith('toimisto')) return 'Toimistotyö';
+    if (key.startsWith('lapsi')) return 'Lapsi- ja perhetyö';
+    return 'Muut tehtävät';
+}
+
+function formatTaskName(key) {
+    const parts = key.split('-');
+    if (parts.length > 1) parts.shift(); 
+    let name = parts.join(' ');
+    // Korvataan viivat ja alaviivat välilyönneillä
+    name = name.replace(/[_-]/g, ' ');
+    return name.charAt(0).toUpperCase() + name.slice(1);
+}
+
+// --- 3. RAPORTTIEN LATAUS JA PIIRTÄMINEN ---
 
 async function loadAllEmployeeProgress() {
     if (!reportContainer) return;
@@ -118,7 +123,8 @@ async function loadAllEmployeeProgress() {
         const visibilityMap = {
             'Suntio': ['Suntio', 'Suntiotyö', 'Haat'],
             'Hautaustoimi': ['Hautaustoimi', 'Kausityö'],
-            'Toimisto': ['Toimisto', 'Lapsiperhe']
+            'Toimisto': ['Toimisto', 'Lapsiperhe'],
+            'Diakonia': ['Diakonia']
         };
 
         if (isSuperAdmin) {
@@ -135,87 +141,128 @@ async function loadAllEmployeeProgress() {
             return;
         }
         
-        let html = `
-            <div style="overflow-x: auto;"> 
-            <table class="report-table">
-                <thead>
-                    <tr>
-                        <th>Työntekijä</th>
-                        <th style="background-color: #e8f0fe;">Rooli</th> 
-                        <th>Suntio %</th>
-                        <th>Toimisto %</th>
-                        <th>Hautaus %</th> 
-                        <th>Suntiotyö %</th>    
-                        <th>Lapsiperhe %</th>   
-                        <th>Häät %</th>
-                        <th style="background-color: #fce8e6;">Kausityö %</th> 
-                        <th>Toiminnot</th>
-                    </tr>
-                </thead>
-                <tbody>
-        `;
-
+        let html = `<div style="display: flex; flex-direction: column; gap: 20px;">`;
         let visibleRows = 0;
 
         snapshot.forEach(doc => {
             const data = doc.data();
+            const userId = doc.id;
             const isEnded = data.employmentEnded === true;
+            const email = data.userEmail || 'Tuntematon';
+            const department = data.department || 'Ei osastoa';
 
-            // --- SUODATUS: Tarkistetaan näytetäänkö päättyneet ---
+            // SUODATUS: Tarkistetaan näytetäänkö päättyneet
             const showEnded = showEndedCheckbox ? showEndedCheckbox.checked : false;
             if (isEnded && !showEnded) {
-                return; // Piilotetaan, jos checkbox ei ole valittuna
+                return; 
             }
 
             visibleRows++;
-            const userRole = data.department || '-';
-
-            // Lasketaan prosentit dynaamisesti
-            const suntioProgress = calculateProgress(data.suntio);
-            const toimistoProgress = calculateProgress(data.toimisto);
-            const hautausProgress = calculateProgress(data.hautaustoimi || data.hautaus); 
-            const suntiotyoProgress = calculateProgress(data.suntiotyo);
-            const lapsiProgress = calculateProgress(data.lapsiperhe);
-            const haatProgress = calculateProgress(data.haat); 
-            const kausityoProgress = calculateProgress(data.kausityo); 
-
-            // Visuaaliset tyylit päättyneille työsuhteille
-            const rowStyle = isEnded ? 'background-color: #f5f5f5; color: #888; font-style: italic;' : '';
-            const roleText = isEnded ? `${userRole} <br><small style="color:red;">(Päättynyt)</small>` : userRole;
-
-            // Linkki yksilöraporttiin
-            const userLink = `<a href="employee-report.html?uid=${doc.id}" target="_blank" style="${isEnded ? 'color:#888;' : ''}">${data.userEmail || 'Tuntematon'}</a>`;
 
             // Päätetään kumpi nappi näytetään (Päätä vai Palauta)
             const actionButton = isEnded 
-                ? `<button class="restore-contract-btn" data-userid="${doc.id}" style="background-color: #28a745; margin-top: 5px;">🔄 Palauta</button>`
-                : `<button class="end-contract-btn" data-userid="${doc.id}" style="background-color: #dc3545; margin-top: 5px;">❌ Päätä</button>`;
-
-            const safeData = encodeURIComponent(JSON.stringify(data));
+                ? `<button class="restore-contract-btn" data-userid="${userId}" data-name="${email}" style="background-color: #28a745; color: white; border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer;">🔄 Palauta työsuhde</button>`
+                : `<button class="end-contract-btn" data-userid="${userId}" data-name="${email}" style="background-color: #dc3545; color: white; border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer;">❌ Päätä työsuhde</button>`;
 
             html += `
-                <tr style="${rowStyle}">
-                    <td>${userLink}</td>
-                    <td>${roleText}</td> 
-                    <td>${suntioProgress}%</td>
-                    <td>${toimistoProgress}%</td>
-                    <td>${hautausProgress}%</td>     
-                    <td>${suntiotyoProgress}%</td>  
-                    <td>${lapsiProgress}%</td>      
-                    <td>${haatProgress}%</td>
-                    <td>${kausityoProgress}%</td>
-                    <td>
-                        <button class="view-details-btn" data-entry="${safeData}" data-name="${data.userEmail}">👁️ Tarkastele</button>
+            <div class="employee-card" style="padding: 20px; border: 1px solid #ddd; border-radius: 8px; background-color: ${isEnded ? '#f8f9fa' : '#fff'}; box-shadow: 0 2px 4px rgba(0,0,0,0.05);">
+                <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #eee; padding-bottom: 10px; margin-bottom: 15px;">
+                    <div>
+                        <h3 style="margin: 0; color: #333;">${email}</h3>
+                        <span style="font-size: 0.85em; color: #666;">Osasto/Rooli: <strong>${department}</strong></span>
+                    </div>
+                    <div>
+                        ${isEnded ? '<span style="background-color: #f8d7da; color: #721c24; padding: 4px 8px; border-radius: 4px; font-size: 0.8em; font-weight: bold; margin-right: 10px;">Päättynyt</span>' : '<span style="background-color: #d4edda; color: #155724; padding: 4px 8px; border-radius: 4px; font-size: 0.8em; font-weight: bold; margin-right: 10px;">Aktiivinen</span>'}
                         ${actionButton}
-                    </td>
-                </tr>
+                    </div>
+                </div>
+                
+                <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 15px;">
             `;
+
+            // Kerätään tehtävät kategorioittain
+            let hasTasks = false;
+            const categories = {};
+
+            Object.keys(data).forEach((key) => {
+                // Sivuutetaan metatiedot
+                if (['userEmail', 'department', 'employmentEnded', 'employmentEndDate', 'requiresPasswordChange', 'expireAt'].includes(key)) return;
+                if (key.endsWith('-date')) return; // Ohitetaan erilliset date-kentät, ne käsitellään parin yhteydessä
+
+                const taskData = data[key];
+                // Tarkistetaan onko kyseessä vanhanmallinen ryhmäobjekti (esim data.suntio = {tehtava1: true})
+                if (typeof taskData === 'object' && taskData !== null && !taskData.completed && !taskData.seconds) {
+                    // Tämä on vanhan mallinen tietokantarakenne, jätetään huomioimatta (uusi tallentaa suoraan juureen)
+                    return; 
+                }
+
+                hasTasks = true;
+                const categoryName = formatCategoryName(key);
+                if (!categories[categoryName]) categories[categoryName] = [];
+                
+                // Selvitetään onko tehty ja milloin
+                let isDone = false;
+                let dateStr = '';
+                
+                if (typeof taskData === 'boolean') {
+                    isDone = taskData;
+                } else if (taskData && typeof taskData === 'object') {
+                    isDone = taskData.completed;
+                    if (taskData.date && taskData.date.seconds) {
+                        dateStr = new Date(taskData.date.seconds * 1000).toLocaleDateString('fi-FI');
+                    }
+                }
+
+                // Haetaan päivämäärä erillisestä kentästä (jos on)
+                if (data[`${key}-date`] && data[`${key}-date`].seconds) {
+                    dateStr = new Date(data[`${key}-date`].seconds * 1000).toLocaleDateString('fi-FI');
+                }
+
+                categories[categoryName].push({
+                    key: key,
+                    done: isDone,
+                    date: dateStr
+                });
+            });
+
+            if (hasTasks) {
+                Object.keys(categories).forEach((catName) => {
+                    html += `
+                    <div style="background: #fdfdfd; padding: 12px; border: 1px solid #eaeaea; border-radius: 6px;">
+                        <h5 style="margin: 0 0 10px 0; color: #0056b3; border-bottom: 1px solid #eee; padding-bottom: 5px;">${catName}</h5>
+                        <ul style="list-style: none; padding: 0; margin: 0; font-size: 0.9em;">
+                    `;
+
+                    categories[catName].forEach((task) => {
+                        if (task.done) {
+                            html += `
+                            <li style="margin-bottom: 6px; color: #155724; background: #e8f5e9; padding: 6px 10px; border-radius: 4px; display: flex; justify-content: space-between; align-items: center;">
+                                <span>✓ ${formatTaskName(task.key)}</span>
+                                <span style="font-size: 0.8em; color: #558b2f; font-weight: bold;">${task.date || 'Tehty'}</span>
+                            </li>`;
+                        } else {
+                            html += `
+                            <li style="margin-bottom: 6px; color: #6c757d; background: #f8f9fa; padding: 6px 10px; border-radius: 4px; border-left: 3px solid #dee2e6;">
+                                <span>○ ${formatTaskName(task.key)}</span>
+                            </li>`;
+                        }
+                    });
+
+                    html += `</ul></div>`;
+                });
+            } else {
+                html += `<p style="color: #999; font-style: italic; width: 100%;">Ei vielä kirjattuja tehtäviä.</p>`;
+            }
+
+            html += `
+                </div>
+            </div>`;
         });
         
-        html += '</tbody></table></div>';
+        html += '</div>';
         
         if (visibleRows === 0) {
-            reportContainer.innerHTML = '<p>Ei aktiivisia työntekijöitä.</p>';
+            reportContainer.innerHTML = '<p>Ei näytettäviä työntekijöitä tällä suodattimella.</p>';
         } else {
             reportContainer.innerHTML = html;
         }
@@ -226,123 +273,7 @@ async function loadAllEmployeeProgress() {
     }
 }
 
-// --- 3. APUFUNKTIOT (LASKENTA) ---
-
-function calculateProgress(categoryData) {
-    if (!categoryData) return 0;
-    
-    const tasks = Object.values(categoryData);
-    if (tasks.length === 0) return 0;
-
-    let completedCount = 0;
-    tasks.forEach(task => {
-        // Lasketaan vain aidosti valmiit (ei peruttuja)
-        if (task === true || (typeof task === 'object' && task !== null && task.completed === true)) {
-            completedCount++;
-        }
-    });
-
-    return Math.round((completedCount / tasks.length) * 100);
-}
-
-// --- 4. MODAL LOGIIKKA (POPUP) ---
-
-if (closeModalBtn) {
-    closeModalBtn.onclick = function() {
-        modal.style.display = "none";
-    }
-}
-
-window.onclick = function(event) {
-    if (event.target == modal) {
-        modal.style.display = "none";
-    }
-}
-
-function openDetailModal(userName, data) {
-    const modalTitle = document.getElementById('modalTitle');
-    const modalBody = document.getElementById('modalBody');
-    
-    if(!modalTitle || !modalBody) return;
-
-    modalTitle.textContent = `Perehdytys: ${userName}`;
-    modalBody.innerHTML = ''; 
-
-    const categories = {
-        'suntio': 'Suntion tehtävät',
-        'toimisto': 'Toimisto',
-        'hautaustoimi': 'Hautaustoimi',
-        'suntiotyo': 'Suntiotyö',
-        'lapsiperhe': 'Lapsi- ja perhetyö',
-        'haat': 'Häät',
-        'kausityo': 'Kausityöntekijä' 
-    };
-
-    let contentFound = false;
-
-    for (const [key, title] of Object.entries(categories)) {
-        let categoryData = data[key];
-        if (!categoryData && key === 'hautaustoimi') categoryData = data['hautaus'];
-
-        if (categoryData && Object.keys(categoryData).length > 0) {
-            contentFound = true;
-            const section = document.createElement('div');
-            section.className = 'detail-section';
-            
-            let itemsHtml = `<h3>${title}</h3>`;
-            
-            const sortedKeys = Object.keys(categoryData).sort((a, b) => {
-                const numA = parseInt(a.replace(/^\D+/g, '')) || 0;
-                const numB = parseInt(b.replace(/^\D+/g, '')) || 0;
-                return numA - numB;
-            });
-
-            sortedKeys.forEach(taskKey => {
-                const taskVal = categoryData[taskKey];
-                let isDone = false;
-                let dateStr = '';
-                let reasonStr = '';
-
-                // UUSI LOGIIKKA: Käsitellään myös peruutussyyt
-                if (typeof taskVal === 'boolean') {
-                    isDone = taskVal;
-                } else if (taskVal && typeof taskVal === 'object') {
-                    isDone = taskVal.completed;
-                    if (isDone && taskVal.date) {
-                        const dateObj = new Date(taskVal.date.seconds * 1000); 
-                        dateStr = ` <small style="color:#666;">(${dateObj.toLocaleDateString('fi-FI')} ${dateObj.toLocaleTimeString('fi-FI', {hour: '2-digit', minute:'2-digit'})})</small>`;
-                    } else if (!isDone && taskVal.removedReason) {
-                        reasonStr = ` <br><small style="color:red; margin-left: 25px;">Syy peruutukseen: "${taskVal.removedReason}"</small>`;
-                    }
-                }
-
-                // Jos peruttu, näytetään huutomerkki tai vastaava ikoni
-                const icon = isDone ? '✅' : (reasonStr ? '⚠️' : '❌');
-                const color = isDone ? 'green' : (reasonStr ? '#d9534f' : '#d9534f');
-                const taskName = taskKey.replace(/task/i, 'Tehtävä ');
-
-                itemsHtml += `
-                    <div class="detail-item" style="border-bottom: 1px solid #f0f0f0; padding: 6px 0;">
-                        <span class="status-icon">${icon}</span> 
-                        <span style="color:${color}; font-weight:500;">${taskName}</span> ${dateStr}
-                        ${reasonStr}
-                    </div>
-                `;
-            });
-
-            section.innerHTML = itemsHtml;
-            modalBody.appendChild(section);
-        }
-    }
-
-    if (!contentFound) {
-        modalBody.innerHTML = '<p>Ei kirjattuja suorituksia.</p>';
-    }
-
-    modal.style.display = "block";
-}
-
-// --- 5. TYÖSUHTEEN PÄÄTTÄMINEN (TTL 2 VUOTTA) ---
+// --- 4. TYÖSUHTEEN PÄÄTTÄMINEN JA PALAUTUS (TTL) ---
 
 async function markEmploymentEnded(userId) {
     try {
@@ -365,19 +296,15 @@ async function markEmploymentEnded(userId) {
     }
 }
 
-// --- 6. TYÖSUHTEEN PALAUTTAMINEN (UUSI) ---
-
 async function restoreEmployment(userId) {
     try {
         await db.collection('userProgress').doc(userId).update({
             employmentEnded: false,
-            employmentEndDate: firebase.firestore.FieldValue.delete(), // Poistetaan päättymispvm
-            expireAt: firebase.firestore.FieldValue.delete()           // Poistetaan 2 vuoden tuhoutumisajastin
+            employmentEndDate: firebase.firestore.FieldValue.delete(), 
+            expireAt: firebase.firestore.FieldValue.delete()           
         });
         
         alert("Työsuhde on palautettu voimaan! Työntekijä voi jälleen kirjautua normaalisti.");
-        
-        // Päivitä lista (piilottaa sen, jos "Näytä päättyneet" ei ole valittuna)
         loadAllEmployeeProgress(); 
 
     } catch (error) {
@@ -386,7 +313,7 @@ async function restoreEmployment(userId) {
     }
 }
 
-// --- 7. TIEDOSTOJEN LATAUS (STORAGE) ---
+// --- 5. TIEDOSTOJEN LATAUS (STORAGE) ---
 
 async function uploadSharedDocument(file) {
     if (!uploadStatus) return;
@@ -415,10 +342,10 @@ async function uploadSharedDocument(file) {
     }
 }
 
-// --- ULOSKIRJAUTUMINEN ---
+// --- 6. ULOSKIRJAUTUMINEN ---
+
 if(logoutButton) {
     logoutButton.addEventListener('click', () => {
-        // 1. Visuaalinen palaute
         const originalText = logoutButton.textContent;
         logoutButton.textContent = "Kirjaudutaan ulos...";
         logoutButton.disabled = true;
@@ -427,7 +354,6 @@ if(logoutButton) {
             window.location.href = 'index.html';
         }).catch((error) => {
             console.error("Virhe uloskirjautumisessa:", error);
-            // 2. Palautetaan nappi, jos nettiyhteys pätkii tms.
             logoutButton.textContent = originalText;
             logoutButton.disabled = false;
         });
