@@ -47,17 +47,17 @@ function showSectionsBasedOnRole(role) {
         }
     });
 
-    // 2. Määritellään, mitä osioita kukin rooli saa nähdä
-    const roleVisibility = {
+const roleVisibility = {
         'Hautaustoimi': ['section-hautaus', 'section-kausityo'], 
-        'Hautaus': ['section-hautaus', 'section-kausityo'], // Varmuuden vuoksi myös vanha nimi
+        'Hautaus': ['section-hautaus', 'section-kausityo'],
         'Kausityö': ['section-hautaus', 'section-kausityo'],     
         'Suntio': ['section-suntio', 'section-haat', 'section-suntiotyo'],
         'Suntiotyö': ['section-suntiotyo', 'section-haat'],
         'Toimisto': ['section-toimisto'],
         'Lapsiperhe': ['section-lapsiperhe'],
-        'Lapsi ja perhetyö': ['section-lapsiperhe'] 
-        'Diakonia': ['section-diakonia']
+        'Lapsi ja perhetyö': ['section-lapsiperhe'],
+        'Diakonia': ['section-diakonia'], // <--- TÄMÄ PILKKU ON PAKOLLINEN!
+        'Vahtimestari': ['section-vahtimestarityo'] 
     };
 
     // 3. Haetaan käyttäjän roolia vastaava lista
